@@ -256,17 +256,30 @@ describe("the prose and the model agree", () => {
     expect(text).toContain("eight-day illness");
   });
 
-  it("quotes the outcomes either side of the line, and gets them the right way round", () => {
-    // The copy used to pair "one meeting either side of the line" with the
-    // toll from ten contacts a day — five notches above it — which overstated
-    // a single step by a factor of three. Spell both comparisons out.
-    const words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
-    const spell = (n: number): string =>
-      n === 10 ? "ten" : n === 51 ? "fifty-one" : n === 141 ? "a hundred and forty-one" : words[n]!;
-
+  it("proves the tipping point in `04 Why?` with the model's own numbers", () => {
+    // The copy used to pair "one meeting either side of the line" with the toll
+    // from ten contacts a day — five notches above it — overstating a single
+    // step threefold. Why? now shows only the two runs either side of the line,
+    // as blocks, and each is read straight off the element so a retune of the
+    // model fails here rather than quietly leaving the page wrong.
     const line = tippingPoint();
-    expect(text).toContain(`${spell(simulate(line).everInfected)} people infected`);
-    expect(text).toContain(spell(simulate(line + 1).everInfected));
-    expect(text).toContain(spell(simulate(DEFAULT_CONTACTS).everInfected));
+    const read = (id: string): string =>
+      doc.querySelector(`[data-testid="${id}"]`)!.textContent!.trim();
+
+    expect(read("why-below-rate")).toContain(`${line} contacts a day`);
+    expect(read("why-below-value")).toBe(String(simulate(line).everInfected));
+    expect(read("why-above-rate")).toContain(`${line + 1} contacts a day`);
+    expect(read("why-above-value")).toBe(String(simulate(line + 1).everInfected));
+  });
+
+  it("keeps `04 Why?` to the one comparison that carries the point", () => {
+    // Naming the default run's toll here as well pulls attention off the
+    // single-step comparison, which is the whole argument of the section.
+    const why = doc.querySelector("#why")!.textContent!.replace(/\s+/g, " ");
+    expect(why).not.toContain(String(simulate(DEFAULT_CONTACTS).everInfected));
+    // ...and it stays an explanation, not an epidemiology lecture or advice.
+    for (const banned of ["r0", "beta", "gamma", "lockdown", "vaccin", "mask"]) {
+      expect(why.toLowerCase()).not.toContain(banned);
+    }
   });
 });

@@ -823,7 +823,7 @@ button {
 }
 
 .loop-shrink .gen i {
-  background: rgb(214 64 44 / 45%);
+  background: rgb(214 64 44 / 60%);
 }
 
 .gen-arrow {
@@ -833,6 +833,88 @@ button {
 .loop figcaption {
   font-size: 0.85rem;
   color: var(--ink-soft);
+}
+
+.why-figures {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+/* The model's own answer either side of the line, as two blocks rather than a
+   sentence: one extra contact a day is the whole difference between them. */
+.tipping {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  max-width: var(--figure);
+  margin: 0;
+}
+
+.tipping figcaption {
+  grid-column: 1 / -1;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.tipping-case {
+  padding: 1rem 1.1rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--recovered);
+  border-radius: 0.4rem;
+}
+
+.tipping-case-above {
+  border-left-color: var(--infected);
+}
+
+/* These sit inside `.closing`, whose `.closing p` rule is one specificity
+   point higher than a bare class — hence `.tipping p` and friends. Left to
+   inherit, the figures rendered at body size in Georgia, where 10 reads as
+   "1o". Same trap as the readouts. */
+.tipping p {
+  font-family: var(--font-ui);
+  max-width: none;
+}
+
+.tipping .tipping-rate {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.tipping .tipping-value {
+  margin: 0.2rem 0 0;
+  font-size: clamp(2.5rem, 5vw, 3.25rem);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--recovered);
+  letter-spacing: -0.02em;
+}
+
+.tipping .tipping-case-above .tipping-value {
+  color: var(--infected);
+}
+
+.tipping .tipping-unit {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.closing .why-callout {
+  max-width: 26ch;
+  margin: clamp(1.5rem, 3vw, 2.25rem) 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3.2vw, 2.25rem);
+  font-weight: 400;
+  line-height: 1.2;
+  text-wrap: balance;
 }
 
 .fine-print {
@@ -876,8 +958,15 @@ button {
 
   .choices,
   .loop,
-  .prompt {
+  .prompt,
+  .tipping {
     max-width: none;
+  }
+
+  /* The callout is the section's conclusion, so it runs under both columns. */
+  .closing .why-callout {
+    grid-column: 1 / -1;
+    max-width: 34ch;
   }
 
   .choices {

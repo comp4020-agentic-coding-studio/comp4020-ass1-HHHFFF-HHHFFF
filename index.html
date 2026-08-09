@@ -294,51 +294,67 @@
             gets its own days, and its own meetings. The question is never how bad one case is.
             It's whether each case, on average, makes more than one more.
           </p>
-          <p>
-            So the thing you moved isn't added to the outbreak, it's <em>multiplied</em> through
-            it. That's why almost the same setting gives an entirely different town. In this model
-            the line sits between five and six contacts a day: one meeting either side of it is the
-            difference between ten people infected and fifty-one. Five meetings above it, at the
-            ten a day you started with, it finds a hundred and forty-one of the hundred and eighty.
-          </p>
-          <p>
-            Which is why the honest advice was never "stop seeing anyone", and never "carry on". It
-            was the thing that sounds too small to matter: you are closer to the line than it
-            feels.
-          </p>
           <p class="fine-print">
             A toy model, not a forecast: 180 people, an eight-day illness, and one seeded random
             number generator. Same seed every run, so the only thing that ever changes is you.
           </p>
         </div>
 
-        <figure class="loop">
-          <div class="loop-row loop-grow">
-            <span class="loop-label">Each case makes a bit <strong>more</strong> than one</span>
-            <span class="gen" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-            <span class="gen-arrow" aria-hidden="true">→</span>
-            <span class="gen" aria-hidden="true"
-              ><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i
-            ></span>
-            <span class="gen-arrow" aria-hidden="true">→</span>
-            <span class="gen" aria-hidden="true"
-              ><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i
-              ><i></i><i></i><i></i><i></i
-            ></span>
-          </div>
-          <div class="loop-row loop-shrink">
-            <span class="loop-label">Each case makes a bit <strong>less</strong> than one</span>
-            <span class="gen" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-            <span class="gen-arrow" aria-hidden="true">→</span>
-            <span class="gen" aria-hidden="true"><i></i><i></i></span>
-            <span class="gen-arrow" aria-hidden="true">→</span>
-            <span class="gen" aria-hidden="true"><i></i></span>
-          </div>
-          <figcaption>
-            Four cases, three rounds. Above the line the rounds compound; below it they run out.
-            Nothing in between — that is what a threshold is.
-          </figcaption>
-        </figure>
+        <div class="why-figures">
+          <!-- Deliberately shallow ratios: the point is "slightly more" and
+               "slightly less" on average, not that every case infects two. -->
+          <figure class="loop">
+            <div class="loop-row loop-grow">
+              <span class="loop-label"
+                >Each case creates slightly <strong>more</strong> than one new case, on
+                average</span
+              >
+              <span class="gen" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+              <span class="gen-arrow" aria-hidden="true">→</span>
+              <span class="gen" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+              <span class="gen-arrow" aria-hidden="true">→</span>
+              <span class="gen" aria-hidden="true"
+                ><i></i><i></i><i></i><i></i><i></i><i></i></span
+              >
+            </div>
+            <div class="loop-row loop-shrink">
+              <span class="loop-label"
+                >Each case creates slightly <strong>less</strong> than one new case, on
+                average</span
+              >
+              <span class="gen" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+              <span class="gen-arrow" aria-hidden="true">→</span>
+              <span class="gen" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="gen-arrow" aria-hidden="true">→</span>
+              <span class="gen" aria-hidden="true"><i></i><i></i></span>
+            </div>
+            <figcaption>
+              Above the threshold, the rounds compound. Below it, they run out. A small change can
+              flip the direction of the outbreak.
+            </figcaption>
+          </figure>
+
+          <figure class="tipping">
+            <div class="tipping-case">
+              <p class="tipping-rate" data-testid="why-below-rate">5 contacts a day</p>
+              <p class="tipping-value" data-testid="why-below-value">10</p>
+              <p class="tipping-unit">people infected</p>
+            </div>
+            <div class="tipping-case tipping-case-above">
+              <p class="tipping-rate" data-testid="why-above-rate">6 contacts a day</p>
+              <p class="tipping-value" data-testid="why-above-value">51</p>
+              <p class="tipping-unit">people infected</p>
+            </div>
+            <figcaption>
+              The line sits between five and six contacts a day. That is one extra contact, either
+              side of it, in the same town of 180.
+            </figcaption>
+          </figure>
+        </div>
+
+        <p class="why-callout">
+          The change you made wasn't added to the outbreak. It was multiplied through it.
+        </p>
       </section>
     </main>
 

@@ -146,10 +146,12 @@ one thing changed.
 
 **4. Never move a simulation constant on its own.** Triggered by any edit to
 `BASE_CONFIG` — `seed`, `transmissionProb`, `infectiousDays`, `population`, the
-contact range. Every number in the prose is a claim about the model ("between
-five and six contacts a day", "ten people infected and fifty-one", "an
-eight-day illness", "180 people"), and `spec/assignment-1.test.ts` checks them
-against `simulate()` and `tippingPoint()`. So: change the constant, run
+contact range. Every number on the page is a claim about the model — "between
+five and six contacts a day", "an eight-day illness", "180 people", and the two
+blocks in `04 Why?` that read `5 contacts a day → 10` against
+`6 contacts a day → 51` — and `spec/assignment-1.test.ts` checks them against
+`simulate()` and `tippingPoint()`, reading the Why figures straight off their
+elements. So: change the constant, run
 `npx vitest run spec/assignment-1.test.ts`, and update the copy the failures
 name. The coupling is verifiable — retune `transmissionProb` away from `0.025`
 and three tests go red, all prose-to-model.
