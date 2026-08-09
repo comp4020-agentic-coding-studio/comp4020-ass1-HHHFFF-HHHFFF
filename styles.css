@@ -9,8 +9,15 @@
   --recovered: #3f8f80;
   --baseline: #8a9099;
   --focus: #1d4ed8;
+
+  /* Three widths, and only three. Reading text sits at --measure so no line
+     runs much past 70 characters; figures and data tables get --figure; the
+     simulation is the only thing that breaks out to the full shell. Mixing in
+     a fourth is what made the right-hand side look unfinished rather than
+     deliberate. */
   --shell: 76rem;
   --measure: 34rem;
+  --figure: 48rem;
   --font-display: georgia, "Times New Roman", times, serif;
   --font-ui: system-ui, -apple-system, "Segoe UI", roboto, sans-serif;
 }
@@ -128,7 +135,7 @@ h1 {
 }
 
 .dek {
-  max-width: 46ch;
+  max-width: var(--measure);
   margin: 0;
   font-family: var(--font-display);
   font-size: clamp(1.05rem, 1.9vw, 1.35rem);
@@ -164,7 +171,7 @@ h1 {
 }
 
 .act-title {
-  max-width: 24ch;
+  max-width: var(--measure);
   margin: 0 0 0.75rem;
   font-family: var(--font-display);
   font-size: clamp(1.6rem, 3.4vw, 2.25rem);
@@ -173,7 +180,7 @@ h1 {
 }
 
 .act-lede {
-  max-width: 46ch;
+  max-width: var(--measure);
   margin: 0 0 1.5rem;
   color: var(--ink-soft);
 }
@@ -184,7 +191,7 @@ h1 {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 0.6rem;
-  max-width: 44rem;
+  max-width: var(--figure);
 }
 
 .choice {
@@ -209,7 +216,7 @@ h1 {
 }
 
 .act-echo {
-  max-width: 46ch;
+  max-width: var(--measure);
   margin: 1.25rem 0 0;
   font-family: var(--font-display);
   font-size: 1.15rem;
@@ -630,7 +637,7 @@ button {
 /* Prompt ------------------------------------------------------------------ */
 
 .prompt {
-  max-width: 52ch;
+  max-width: var(--measure);
   margin: 0;
   font-family: var(--font-display);
   font-size: clamp(1.05rem, 2vw, 1.3rem);
@@ -640,7 +647,7 @@ button {
 /* Compare ----------------------------------------------------------------- */
 
 .compare-empty {
-  max-width: 52ch;
+  max-width: var(--measure);
   margin: 0;
   color: var(--ink-soft);
 }
@@ -652,7 +659,7 @@ button {
 .compare-body {
   display: grid;
   gap: 1.25rem;
-  max-width: 48rem;
+  max-width: var(--figure);
 }
 
 .compare-body[hidden] {
@@ -751,7 +758,7 @@ button {
 }
 
 .compare-note {
-  max-width: 52ch;
+  max-width: var(--measure);
   margin: 0;
   font-family: var(--font-display);
   font-size: 1.1rem;
@@ -780,7 +787,7 @@ button {
 .loop {
   display: grid;
   gap: 0.9rem;
-  max-width: 44rem;
+  max-width: var(--figure);
   padding: 1.1rem;
   margin: 0 0 1.5rem;
   background: var(--paper-raised);
