@@ -1,83 +1,64 @@
 # Process overview
 
-<!-- TEMPLATE: this file is a shape to fill in, not a form. Replace everything
-     in it with your own overview, and delete this comment — `pnpm
-     check:evidence` will remind you if it's still here. -->
-
-A reading-guide to how the work came together --- a map to your process, not an
-essay about it. Markers read this file and follow its citations; they don't
-trawl the repo for evidence you didn't point at, so if a moment mattered, cite
-it.
-
-This file is the shape; the course site's
-[assessment page](https://comp.anu.edu.au/courses/comp4020-agentic-coding-studio/topics/assessment/#what-you-submit)
-is the requirement, and each brief adds its own word count and moment count.
-
 ## What I built
 
-One paragraph: the thing, and the idea behind it.
+*One Small Change, One Very Different Outbreak* — an interactive explainer with
+one mechanic: how many people each person meets in a day. A town of 180 dots,
+one index case, a seeded simulation, one slider. The visitor predicts what will
+happen, watches a baseline outbreak, changes exactly one number, and gets both
+curves on the same axes. The idea is the threshold: between five and six
+contacts a day, the same virus in the same town goes from ten people infected to
+a hundred and forty. Everything that would dilute that — vaccines, masks, real
+COVID data, a second parameter — is deliberately absent.
 
 ## The moments that mattered
 
-Three or four for an assignment; fewer is fine for a weekly prototype. Keep the
-list short so each moment has room to do all four jobs:
+### 1. The test that could never pass
 
-1. **what happened** --- the problem, or the thing the agent got wrong
-2. **what you did instead of the obvious thing** --- the call you made, and why
-   it beat the obvious one
-3. **how you knew it was right** --- the check you ran, the viewport you looked
-   at, what you read before accepting the diff
-4. **the citation** --- a commit or commit range, a `CLAUDE.md` change, a check
-   that went from red to green, a prompt paired with the commit it produced
+The starter shipped a spec test that clicked the control in JSDOM and asserted
+the DOM changed. It was red, and the obvious fix was to make it green: emit a
+classic script instead of a module, or add an inline script the test could see.
+Before doing that I probed JSDOM and found it does not execute
+`<script type="module">` at all — the only script Vite emits — and has no
+`requestAnimationFrame` and no canvas. The test was failing for reasons that had
+nothing to do with my page, and satisfying it would have meant contorting the
+site around a blind sensor. So I replaced the sensor: the simulation moved into
+a DOM-free module testable on its own, JSDOM kept only the markup contract, and
+what renders is checked in real Chrome. I knew it had taken when tests that
+pin the copy to the model went red on a retune.
+[`a71d57b...e2e4125`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HHHFFF-HHHFFF/compare/a71d57b...e2e4125)
 
-Jobs 2 and 3 are the ones the repo can't tell a reader on its own, so they're
-where the marks are. The strongest moments are the ones where a correction
-landed in the **harness** rather than in another prompt --- a rule added to
-`CLAUDE.md`, a check wired up, an attempt thrown away: re-prompting until it
-passes is the routine case, and changing what the agent works against is the
-skilled one.
+### 2. Choosing the tipping point by sweep, not by eye
 
-Cite each moment as a link whose text is the commit hash or range and whose
-target is this repo's commit or compare URL, so a reader clicks straight to the
-evidence:
+The whole piece rests on there being a sharp, findable threshold. The easy path
+was to pick plausible transmission numbers and eyeball whether the outbreak
+"looked right". Because the simulation was already DOM-free, I swept it instead
+— eight seeds against every contact rate — and read the table rather than the
+animation. Seed 20260817 gave a monotone response with a cliff between 5 and 6
+contacts a day: 10 people infected against 51. That is now asserted in the spec,
+so retuning the model without rewriting the copy fails the build.
+[`e2e4125`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HHHFFF-HHHFFF/commit/e2e4125)
 
-- one commit: [`a1b2c3d`](https://github.com/YOUR-ORG/YOUR-REPO/commit/a1b2c3d)
-- a range:
-  [`a1b2c3d...e4f5a6b`](https://github.com/YOUR-ORG/YOUR-REPO/compare/a1b2c3d...e4f5a6b)
+### 3. The page I could not see
 
-To pair a prompt with the commit it produced, quote the prompt (curated, not a
-full transcript) next to the citation:
+Screenshots showed the outbreak frozen on day 0. Twenty seconds of virtual time
+in headless Chrome advanced it by one simulated day, because headless produces
+roughly a frame per second without a compositor — so every interactive state was
+invisible to verification. Rather than accept screenshots of a dead page, I
+added a small documented test seam that steps the same simulation the visitor
+sees without waiting for frames, and corrected `CLAUDE.md`, whose `file://`
+screenshot recipe was silently wrong: Chrome blocks module scripts from a
+`file://` origin, so those screenshots were of a page with no JavaScript at all.
+[`e2e4125`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HHHFFF-HHHFFF/commit/e2e4125)
 
-> the prompt, verbatim
+### 4. A bug 36 green tests could not see
 
-Screenshots are welcome where one carries the verification better than a
-sentence does. Commit the file to this repo and link it with a **relative**
-path, which is what makes it render on GitHub: `![alt text](docs/before.png)`.
-Images don't count towards the word count and don't replace the citation.
-
-### A worked moment, for shape
-
-Delete this section along with the rest of the boilerplate --- it's here to show
-the four jobs in one paragraph, not to be imitated in content.
-
-> The date formatter kept coming back with `toLocaleDateString()` and no locale
-> argument, so the same build rendered differently on my machine and in CI. I'd
-> already re-prompted it twice, which fixed the line but not the habit, so the
-> third time I put the rule in `CLAUDE.md` instead
-> ([`3f9ac21`](https://github.com/YOUR-ORG/YOUR-REPO/commit/3f9ac21)) and added
-> a spec test that fails on a bare `toLocaleDateString`. That's what told me it
-> had actually taken: the test went red against the old code and green against
-> the new, and the next two features it wrote passed it without prompting
-> ([`3f9ac21...b7e0d14`](https://github.com/YOUR-ORG/YOUR-REPO/compare/3f9ac21...b7e0d14)).
-
-## Before you ship
-
-`pnpm check:evidence` verifies your citations resolve to real commits, that the
-current reflection entry is in `reflections/`, and that your `CLAUDE.md` is
-there --- before a marker ever opens the file. It checks that your map is
-traceable, not that it is good: the marker judges whether your small,
-deliberately chosen set of moments shows real judgement and reflection. A green
-check is not a substitute for that curation.
-
-Images are deliberately not checked, because whether one renders is visible the
-moment you look. Open this file on GitHub and look at it before you ship.
+Rebuilding the page as a narrative, every test passed — and a screenshot showed
+the steps reading 01, 03, 04, with a hole where 02 should be, because "change
+one thing" shared the watch section's marker. The obvious response was to fix
+the markup and move on. Instead I asked what class of error had got through: the
+tests knew each section's content but nothing about the sequence a reader meets.
+So the fix ships with a test asserting the step numbers run 1..n with no gap.
+The same screenshot pass caught a prompt still saying "Run it" after the run had
+happened.
+[`e2e4125...75dc1b6`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HHHFFF-HHHFFF/compare/e2e4125...75dc1b6)

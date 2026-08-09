@@ -148,6 +148,24 @@ Rules that keep it that shape. Break them deliberately, not by accident:
 unit square) so the outcome can't change when the window resizes, and so the
 behaviour can be tested without a browser.
 
+## Keeping PROCESS.md current
+
+`PROCESS.md` is maintained as the work goes, not written at the end. After any
+change that produced a real moment, consider whether it beats one of the four
+already there, and say so rather than silently growing the file — the brief
+asks for **three or four**, so a fifth means replacing a weaker one.
+
+A moment earns its place only if it has all four jobs: what went wrong, what was
+done **instead of the obvious thing**, how that was verified, and a citation
+that resolves. The bar for "strong" is a correction that landed in the harness —
+a rule in this file, a check wired up, an attempt discarded — not another
+prompt. A moment that is really just "it broke and I fixed it" is the routine
+case and should lose to one that changed what the agent works against.
+
+Keep it inside 400–600 words (`pnpm check:evidence` verifies the citations
+resolve, not the length), and re-run that check after editing: a citation whose
+SHA doesn't exist renders perfectly and still fails.
+
 ## Seeing the rendered page on this machine
 
 There's no `agent-browser` CLI installed here, so ground truth comes from
