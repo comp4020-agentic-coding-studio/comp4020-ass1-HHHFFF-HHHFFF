@@ -114,6 +114,63 @@ generators (Astro included) need `base` set explicitly, and getting it wrong
 looks fine locally while every asset 404s on the live URL. And commit the
 updated `pnpm-lock.yaml`: CI installs with `--frozen-lockfile`.
 
+## Seeing the rendered page on this machine
+
+There's no `agent-browser` CLI installed here, so ground truth comes from
+headless Chrome directly:
+
+```bash
+"/c/Program Files/Google/Chrome/Application/chrome.exe" --headless --disable-gpu \
+  --hide-scrollbars --window-size=1400,2200 \
+  --screenshot="C:\Users\H-F\AppData\Local\Temp\shot.png" \
+  "file:///E:/ANU/COMP4020/comp4020-ass1-HHHFFF-HHHFFF/dist/index.html"
+```
+
+Two things to know. **Write the PNG to the temp dir, not the repo** --- Chrome
+gets "拒绝访问" writing into the working directory. And to see an interactive
+state, copy `dist/index.html` to the temp dir with a `<script type="module">`
+appended that clicks the control, then shoot that copy; module scripts run in
+order, so the injected click lands after the page's own script has wired up.
+
+### Chrome won't give you a 390px window --- use an iframe
+
+`--window-size=390,844` **does not produce a 390px viewport** on Windows.
+Chrome clamps the window to a 500px minimum (both `--headless` and
+`--headless=new`), then writes a PNG that is 390 wide anyway --- so the image
+is the left 390px of a 500px layout, cropped. The result looks exactly like
+horizontal overflow: text clipped at the right edge, cards running off the
+page. It is an artefact of the crop, not a bug in the site, and "fixing" it
+means breaking a layout that was correct.
+
+Since 390×844 is one of the two marked viewports, measure it by rendering the
+page inside a 390px iframe instead of resizing the window. Inline the built
+HTML into `srcdoc` so the frame is same-origin and its document is readable,
+then read `clientWidth` / `scrollWidth` and every element's
+`getBoundingClientRect()` from the parent. Give it
+`--virtual-time-budget=8000` so the measurement runs before the screenshot.
+A real result reads `clientWidth=390 scrollWidth=390`.
+
+### Don't trust JSDOM's `getComputedStyle` for whether something is visible
+
+It doesn't model the user-agent/author cascade. It reported `display: none` for
+a reply form that was plainly visible in Chrome, so the test passed while the
+page was wrong. If a check is about what renders, either assert the stylesheet
+contract in text or take a screenshot.
+
+### `hidden` loses to any author `display`
+
+The `hidden` attribute is only `[hidden] { display: none }` in the user-agent
+stylesheet, and **author rules beat the user agent at any specificity**. So
+`.thing { display: flex }` plus `<div class="thing" hidden>` renders visible ---
+the attribute reads correctly in the DOM and in every markup assertion while
+the element sits there on screen. Any element that sets its own `display` and
+gets toggled by `hidden` needs the override alongside it:
+
+```css
+.reply-form { display: flex; }
+.reply-form[hidden] { display: none; }
+```
+
 ## Your process is part of the mark
 
 The deployed page is only half of it. How you got there is marked too: your
