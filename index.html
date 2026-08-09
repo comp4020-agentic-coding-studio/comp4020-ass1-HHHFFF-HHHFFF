@@ -38,15 +38,19 @@
       </section>
 
       <!-- 00 — commit to an answer before seeing one. -->
-      <section id="predict" class="act" aria-labelledby="predict-title">
-        <p class="step">Before we start</p>
-        <h2 id="predict-title" class="act-title">
-          One infected person walks into this town. What do you think happens next?
-        </h2>
-        <p class="act-lede">
-          No trick, and no maths yet. Pick the one you'd bet on — you'll find out in about ten
-          seconds.
-        </p>
+      <section id="predict" class="act act-split" aria-labelledby="predict-title">
+        <div class="act-copy">
+          <p class="step">Before we start</p>
+          <h2 id="predict-title" class="act-title">
+            One infected person walks into this town. What do you think happens next?
+          </h2>
+          <p class="act-lede">
+            No trick, and no maths yet. Pick the one you'd bet on — you'll find out in about ten
+            seconds.
+          </p>
+          <p class="act-echo" data-testid="prediction-echo" hidden></p>
+        </div>
+
         <div class="choices" role="group" aria-label="Your prediction">
           <button type="button" class="choice" data-predict="fizzle" data-testid="predict-fizzle">
             It dies out quickly
@@ -58,7 +62,6 @@
             It becomes a large outbreak
           </button>
         </div>
-        <p class="act-echo" data-testid="prediction-echo" hidden></p>
       </section>
 
       <!-- 01 Watch, then 02 Change one thing: the same apparatus, a new
@@ -190,11 +193,14 @@
       <!-- 02 — the instruction, given its own beat. The slider itself stays up
            in the control group with the run button: separating them would
            strand one of the two off-screen on a phone. -->
-      <section id="change" class="act act-thin" aria-labelledby="change-title">
-        <p class="step">02 · Change one thing</p>
-        <h2 id="change-title" class="act-title" data-testid="act-title">
-          Then change just one thing
-        </h2>
+      <section id="change" class="act act-thin act-split" aria-labelledby="change-title">
+        <div class="act-copy">
+          <p class="step">02 · Change one thing</p>
+          <h2 id="change-title" class="act-title" data-testid="act-title">
+            Then change just one thing
+          </h2>
+        </div>
+
         <p class="prompt" role="status" data-testid="prompt">
           One person is infected. Everyone else is healthy. Press start and watch what ten contacts
           a day does.
@@ -235,7 +241,8 @@
             </figcaption>
           </figure>
 
-          <table class="compare-table">
+          <div class="compare-readout">
+            <table class="compare-table">
             <caption class="visually-hidden">
               Baseline outbreak compared with your version
             </caption>
@@ -269,22 +276,41 @@
                 <td class="delta" data-testid="compare-days-delta">—</td>
               </tr>
             </tbody>
-          </table>
+            </table>
 
-          <p class="compare-note" data-testid="comparison-note"></p>
+            <p class="compare-note" data-testid="comparison-note"></p>
+          </div>
         </div>
       </section>
 
       <!-- 04 — the mechanism, after the phenomenon. -->
-      <section id="why" class="act closing" aria-labelledby="why-title">
-        <p class="step">04 · Why?</p>
-        <h2 id="why-title">Why did such a small change matter?</h2>
-        <p>
-          One infection isn't an outcome, it's an opportunity. Every day someone is infectious they
-          meet people, and each meeting is a chance to make another infection — which then gets its
-          own days, and its own meetings. The question is never how bad one case is. It's whether
-          each case, on average, makes more than one more.
-        </p>
+      <section id="why" class="act closing act-split" aria-labelledby="why-title">
+        <div class="act-copy">
+          <p class="step">04 · Why?</p>
+          <h2 id="why-title">Why did such a small change matter?</h2>
+          <p>
+            One infection isn't an outcome, it's an opportunity. Every day someone is infectious
+            they meet people, and each meeting is a chance to make another infection — which then
+            gets its own days, and its own meetings. The question is never how bad one case is.
+            It's whether each case, on average, makes more than one more.
+          </p>
+          <p>
+            So the thing you moved isn't added to the outbreak, it's <em>multiplied</em> through
+            it. That's why almost the same setting gives an entirely different town. In this model
+            the line sits between five and six contacts a day: one meeting either side of it is the
+            difference between ten people infected and fifty-one. Five meetings above it, at the
+            ten a day you started with, it finds a hundred and forty-one of the hundred and eighty.
+          </p>
+          <p>
+            Which is why the honest advice was never "stop seeing anyone", and never "carry on". It
+            was the thing that sounds too small to matter: you are closer to the line than it
+            feels.
+          </p>
+          <p class="fine-print">
+            A toy model, not a forecast: 180 people, an eight-day illness, and one seeded random
+            number generator. Same seed every run, so the only thing that ever changes is you.
+          </p>
+        </div>
 
         <figure class="loop">
           <div class="loop-row loop-grow">
@@ -313,22 +339,6 @@
             Nothing in between — that is what a threshold is.
           </figcaption>
         </figure>
-
-        <p>
-          So the thing you moved isn't added to the outbreak, it's <em>multiplied</em> through it.
-          That's why almost the same setting gives an entirely different town. In this model the
-          line sits between five and six contacts a day: one meeting either side of it is the
-          difference between ten people infected and fifty-one. Five meetings above it, at the ten
-          a day you started with, it finds a hundred and forty-one of the hundred and eighty.
-        </p>
-        <p>
-          Which is why the honest advice was never "stop seeing anyone", and never "carry on". It
-          was the thing that sounds too small to matter: you are closer to the line than it feels.
-        </p>
-        <p class="fine-print">
-          A toy model, not a forecast: 180 people, an eight-day illness, and one seeded random
-          number generator. Same seed every run, so the only thing that ever changes is you.
-        </p>
       </section>
     </main>
 

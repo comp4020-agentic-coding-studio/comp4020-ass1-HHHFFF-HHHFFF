@@ -860,8 +860,48 @@ button {
     grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   }
 
+  /* Reading text keeps its measure; the thing it is talking about moves up
+     beside it. Without this the prose column ends at 936px inside a 1512px
+     shell and the right-hand 45% of every text section is simply empty. */
+  .act-split {
+    display: grid;
+    grid-template-columns: minmax(0, var(--measure)) minmax(0, 1fr);
+    column-gap: clamp(2rem, 5vw, 4rem);
+    align-items: start;
+  }
+
+  .act-copy > :last-child {
+    margin-bottom: 0;
+  }
+
+  .choices,
+  .loop,
+  .prompt {
+    max-width: none;
+  }
+
   .choices {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-self: center;
+  }
+
+  .loop {
+    margin-bottom: 0;
+  }
+
+  #change .prompt {
+    padding-top: 0.35rem;
+  }
+
+  .compare-body {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    column-gap: clamp(1.5rem, 3vw, 2.5rem);
+    align-items: start;
+    max-width: none;
+  }
+
+  .compare-readout {
+    display: grid;
+    gap: 0.9rem;
   }
 
   .controls {
