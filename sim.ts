@@ -96,6 +96,22 @@ export function tippingPoint(
   return 1 / (config.transmissionProb * config.infectiousDays);
 }
 
+export type Tendency = "growing" | "shrinking" | "balanced";
+
+/**
+ * The indicator the page actually shows. It is the reproduction number wearing
+ * plain clothes: the page never says R0, beta or gamma, it says "growing" or
+ * "shrinking" and how many people one infection hands it to.
+ */
+export function spreadTendency(
+  contactsPerDay: number,
+  config: Pick<OutbreakConfig, "transmissionProb" | "infectiousDays"> = BASE_CONFIG,
+): Tendency {
+  const onward = reproductionNumber(contactsPerDay, config);
+  if (Math.abs(onward - 1) < 1e-9) return "balanced";
+  return onward > 1 ? "growing" : "shrinking";
+}
+
 export class Outbreak {
   readonly config: OutbreakConfig;
   readonly people: Person[];

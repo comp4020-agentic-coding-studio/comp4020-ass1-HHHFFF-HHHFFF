@@ -7,7 +7,9 @@
   --susceptible: #b4bcc8;
   --infected: #d6402c;
   --recovered: #3f8f80;
+  --baseline: #8a9099;
   --focus: #1d4ed8;
+  --shell: 76rem;
   --measure: 34rem;
   --font-display: georgia, "Times New Roman", times, serif;
   --font-ui: system-ui, -apple-system, "Segoe UI", roboto, sans-serif;
@@ -66,7 +68,7 @@ body {
   gap: 0.75rem 1.5rem;
   align-items: baseline;
   justify-content: space-between;
-  max-width: 76rem;
+  max-width: var(--shell);
   padding: 1.25rem clamp(1rem, 4vw, 3rem);
   margin: 0 auto;
 }
@@ -85,7 +87,6 @@ body {
   gap: 1.25rem;
   font-size: 0.85rem;
 }
-
 
 a {
   color: var(--ink);
@@ -107,8 +108,8 @@ a:hover {
 /* Hero -------------------------------------------------------------------- */
 
 .hero {
-  max-width: 76rem;
-  padding: clamp(0.75rem, 2.5vw, 1.75rem) clamp(1rem, 4vw, 3rem) clamp(0.75rem, 2vw, 1.5rem);
+  max-width: var(--shell);
+  padding: clamp(0.75rem, 2.5vw, 1.75rem) clamp(1rem, 4vw, 3rem) clamp(1.25rem, 3vw, 2.25rem);
   margin: 0 auto;
 }
 
@@ -135,19 +136,93 @@ h1 {
   color: var(--ink);
 }
 
-/* Stage ------------------------------------------------------------------- */
+/* Acts -------------------------------------------------------------------- */
 
-.stage {
-  max-width: 76rem;
-  padding: clamp(1rem, 3vw, 2rem) clamp(1rem, 4vw, 3rem) clamp(2rem, 5vw, 4rem);
+.act {
+  max-width: var(--shell);
+  padding: clamp(1.75rem, 4vw, 3rem) clamp(1rem, 4vw, 3rem);
   margin: 0 auto;
+  border-top: 1px solid var(--rule);
 }
+
+.act-thin {
+  padding-top: clamp(1.25rem, 2.5vw, 1.75rem);
+  padding-bottom: clamp(1.25rem, 2.5vw, 1.75rem);
+}
+
+.step {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--infected);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.act-title {
+  max-width: 24ch;
+  margin: 0 0 0.75rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3.4vw, 2.25rem);
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+.act-lede {
+  max-width: 46ch;
+  margin: 0 0 1.5rem;
+  color: var(--ink-soft);
+}
+
+/* Prediction -------------------------------------------------------------- */
+
+.choices {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  max-width: 44rem;
+}
+
+.choice {
+  padding: 0.9rem 1.1rem;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: 0.4rem;
+}
+
+.choice:hover {
+  border-color: var(--ink-soft);
+}
+
+.choice[aria-pressed="true"] {
+  color: var(--paper-raised);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.act-echo {
+  max-width: 46ch;
+  margin: 1.25rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+}
+
+.act-echo[hidden] {
+  display: none;
+}
+
+/* Stage ------------------------------------------------------------------- */
 
 .stage-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: clamp(1.25rem, 3vw, 2.5rem);
   align-items: start;
+  margin-top: 1.5rem;
 }
 
 .field {
@@ -247,9 +322,10 @@ h1 {
   color: var(--infected);
 }
 
-/* Chart ------------------------------------------------------------------- */
+/* Charts ------------------------------------------------------------------ */
 
-.chart-wrap {
+.chart-wrap,
+.overlay-wrap {
   margin: 0;
 }
 
@@ -260,6 +336,10 @@ h1 {
   background: var(--paper-raised);
   border: 1px solid var(--rule);
   border-radius: 0.4rem;
+}
+
+.chart-overlay {
+  height: clamp(11rem, 30vh, 17rem);
 }
 
 .axis {
@@ -277,14 +357,15 @@ h1 {
   vector-effect: non-scaling-stroke;
 }
 
-.curve-fill {
+.curve-fill,
+.overlay-fill {
   fill: rgb(214 64 44 / 12%);
   stroke: none;
 }
 
 .ghost-curve {
   fill: none;
-  stroke: #9aa1ad;
+  stroke: var(--baseline);
   stroke-width: 2;
   stroke-dasharray: 5 4;
   vector-effect: non-scaling-stroke;
@@ -377,9 +458,15 @@ button {
   letter-spacing: 0.06em;
 }
 
+.slider-track {
+  position: relative;
+  padding-bottom: 1.2rem;
+}
+
 .slider input {
   width: 100%;
   height: 1.75rem;
+  margin: 0;
   accent-color: var(--infected);
 }
 
@@ -396,38 +483,214 @@ button {
   border-radius: 0.4rem;
 }
 
-/* Prompt and comparison --------------------------------------------------- */
+/* Where the first run left the slider, so "one small change" has a ruler. */
+.baseline-marker {
+  position: absolute;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.baseline-marker[hidden] {
+  display: none;
+}
+
+.baseline-tick {
+  width: 2px;
+  height: 0.5rem;
+  background: var(--baseline);
+}
+
+.baseline-label {
+  font-size: 0.65rem;
+  color: var(--baseline);
+  white-space: nowrap;
+}
+
+/* Spread tendency --------------------------------------------------------- */
+
+.tendency {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: baseline;
+  padding: 0.75rem 0.9rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: 0.4rem;
+}
+
+.tendency[hidden] {
+  display: none;
+}
+
+.tendency-pill {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: 999px;
+}
+
+.tendency-pill[data-tendency="growing"] {
+  color: #8c2317;
+  background: rgb(214 64 44 / 14%);
+}
+
+.tendency-pill[data-tendency="shrinking"] {
+  color: #24564c;
+  background: rgb(63 143 128 / 16%);
+}
+
+.tendency-pill[data-tendency="balanced"] {
+  color: #6b5310;
+  background: rgb(180 140 30 / 18%);
+}
+
+.tendency-detail {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.threshold-notice {
+  padding: 0.75rem 0.9rem;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  background: rgb(63 143 128 / 12%);
+  border-left: 3px solid var(--recovered);
+  border-radius: 0.3rem;
+}
+
+.threshold-notice[hidden] {
+  display: none;
+}
+
+/* Run summary ------------------------------------------------------------- */
+
+.run-summary {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--ink);
+  border-radius: 0.4rem;
+}
+
+.run-summary[hidden] {
+  display: none;
+}
+
+.run-verdict {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+}
+
+/* "Outbreak duration" wraps to two lines where the others don't, so the
+   numbers align to the bottom rather than stepping down the row. */
+.summary-grid > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.summary-grid dt {
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.summary-grid dd {
+  margin: 0.1rem 0 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Prompt ------------------------------------------------------------------ */
 
 .prompt {
   max-width: 52ch;
-  padding-top: clamp(1.25rem, 3vw, 2rem);
   margin: 0;
   font-family: var(--font-display);
   font-size: clamp(1.05rem, 2vw, 1.3rem);
   line-height: 1.45;
 }
 
-.compare {
-  display: grid;
-  gap: 0.75rem;
-  max-width: 34rem;
-  padding: 1rem 1.1rem;
-  margin-top: 1.25rem;
-  background: var(--paper-raised);
-  border: 1px solid var(--rule);
-  border-left: 4px solid var(--infected);
-  border-radius: 0.4rem;
+/* Compare ----------------------------------------------------------------- */
+
+.compare-empty {
+  max-width: 52ch;
+  margin: 0;
+  color: var(--ink-soft);
 }
 
-.compare[hidden] {
+.compare-empty[hidden] {
   display: none;
 }
 
-.compare-title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 400;
+.compare-body {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 48rem;
+}
+
+.compare-body[hidden] {
+  display: none;
+}
+
+.overlay-base {
+  fill: none;
+  stroke: var(--baseline);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.overlay-mod {
+  fill: none;
+  stroke: var(--infected);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.overlay-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+  padding-top: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.key-base {
+  color: var(--baseline);
+}
+
+.key-mod {
+  color: var(--infected);
+}
+
+.overlay-scale {
+  margin-left: auto;
 }
 
 .compare-table {
@@ -438,8 +701,9 @@ button {
 
 .compare-table th,
 .compare-table td {
-  padding: 0.35rem 0;
+  padding: 0.5rem 0 0.5rem 0.6rem;
   text-align: right;
+  white-space: nowrap;
   border-bottom: 1px solid var(--rule);
 }
 
@@ -451,32 +715,46 @@ button {
 }
 
 .compare-table tbody th {
+  padding-left: 0;
   font-weight: 400;
   color: var(--ink-soft);
   text-align: left;
+  white-space: normal;
+}
+
+.unit {
+  display: block;
+  font-size: 0.75rem;
 }
 
 .compare-table td {
-  width: 30%;
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-.compare-note {
-  margin: 0;
-  font-size: 0.9rem;
+.delta {
+  font-size: 0.9rem !important;
   color: var(--ink-soft);
 }
 
-/* Closing ----------------------------------------------------------------- */
-
-.closing {
-  max-width: 76rem;
-  padding: clamp(2rem, 6vw, 4rem) clamp(1rem, 4vw, 3rem);
-  margin: 0 auto;
-  border-top: 1px solid var(--rule);
+.delta[data-dir="down"] {
+  color: var(--recovered);
 }
+
+.delta[data-dir="up"] {
+  color: var(--infected);
+}
+
+.compare-note {
+  max-width: 52ch;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+/* Why --------------------------------------------------------------------- */
 
 .closing h2 {
   max-width: var(--measure);
@@ -495,13 +773,64 @@ button {
   line-height: 1.6;
 }
 
+.loop {
+  display: grid;
+  gap: 0.9rem;
+  max-width: 44rem;
+  padding: 1.1rem;
+  margin: 0 0 1.5rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: 0.5rem;
+}
+
+.loop-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
+  align-items: center;
+}
+
+.loop-label {
+  flex: 1 0 100%;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.gen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  max-width: 9rem;
+}
+
+.gen i {
+  width: 0.55rem;
+  height: 0.55rem;
+  background: var(--infected);
+  border-radius: 50%;
+}
+
+.loop-shrink .gen i {
+  background: rgb(214 64 44 / 45%);
+}
+
+.gen-arrow {
+  color: var(--ink-soft);
+}
+
+.loop figcaption {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
 .fine-print {
   font-size: 0.85rem !important;
   color: var(--ink-soft);
 }
 
 .colophon {
-  max-width: 76rem;
+  max-width: var(--shell);
   padding: 1.5rem clamp(1rem, 4vw, 3rem) 3rem;
   margin: 0 auto;
   font-size: 0.8rem;
@@ -520,6 +849,10 @@ button {
     grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   }
 
+  .choices {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .controls {
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
@@ -528,11 +861,5 @@ button {
 
   .reset {
     grid-column: 1 / -1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .skip-link {
-    transition: none;
   }
 }

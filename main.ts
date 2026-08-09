@@ -1,12 +1,22 @@
-import { makeOutbreak, type Outbreak, type Person, type RunSummary } from "./sim";
+import {
+  DEFAULT_CONTACTS,
+  makeOutbreak,
+  reproductionNumber,
+  spreadTendency,
+  type Outbreak,
+  type Person,
+  type RunSummary,
+  type Tendency,
+} from "./sim";
 
 // One tick of the simulation per this many milliseconds. The simulation
 // counts ticks, not frames, so a 120 Hz screen and a struggling laptop see the
 // same outbreak at the same speed.
-const TICK_MS = 20;
+const TICK_MS = 22;
 const MAX_TICKS_PER_FRAME = 6;
 
 type Phase = "idle" | "running" | "paused" | "done";
+type Guess = "fizzle" | "slow" | "big";
 
 function need<T extends Element>(selector: string): T {
   const found = document.querySelector<T>(selector);
@@ -22,6 +32,13 @@ function setHidden(element: Element, hidden: boolean): void {
 }
 
 const ui = {
+  watchSection: need<HTMLElement>("#watch"),
+  compareSection: need<HTMLElement>("#compare"),
+  actTitle: need<HTMLElement>('[data-testid="act-title"]'),
+
+  predictions: Array.from(document.querySelectorAll<HTMLButtonElement>("[data-predict]")),
+  predictionEcho: need<HTMLElement>('[data-testid="prediction-echo"]'),
+
   canvas: need<HTMLCanvasElement>("#field"),
   chart: need<SVGSVGElement>("#chart"),
   curve: need<SVGPolylineElement>(".curve"),
@@ -30,40 +47,69 @@ const ui = {
   chartEmpty: need<SVGTextElement>(".chart-empty"),
   chartY: need<HTMLElement>('[data-testid="chart-y"]'),
   chartX: need<HTMLElement>('[data-testid="chart-x"]'),
+
   run: need<HTMLButtonElement>("#run"),
   reset: need<HTMLButtonElement>("#reset"),
   contacts: need<HTMLInputElement>("#contacts"),
   contactsValue: need<HTMLOutputElement>('[data-testid="contacts-value"]'),
   sliderBox: need<HTMLElement>(".slider"),
+  baselineMarker: need<HTMLElement>('[data-testid="baseline-marker"]'),
+  baselineLabel: need<HTMLElement>('[data-testid="baseline-label"]'),
+
+  tendency: need<HTMLElement>('[data-testid="tendency"]'),
+  tendencyPill: need<HTMLElement>('[data-testid="tendency-pill"]'),
+  tendencyDetail: need<HTMLElement>('[data-testid="tendency-detail"]'),
+  thresholdNotice: need<HTMLElement>('[data-testid="threshold-notice"]'),
+
   day: need<HTMLElement>('[data-testid="readout-day"]'),
   infected: need<HTMLElement>('[data-testid="readout-infected"]'),
   peak: need<HTMLElement>('[data-testid="readout-peak"]'),
   ever: need<HTMLElement>('[data-testid="readout-ever"]'),
+
+  runSummary: need<HTMLElement>('[data-testid="run-summary"]'),
+  runVerdict: need<HTMLElement>('[data-testid="run-verdict"]'),
+  summaryPeak: need<HTMLElement>('[data-testid="summary-peak"]'),
+  summaryTotal: need<HTMLElement>('[data-testid="summary-total"]'),
+  summaryDays: need<HTMLElement>('[data-testid="summary-days"]'),
+
   prompt: need<HTMLElement>('[data-testid="prompt"]'),
-  comparison: need<HTMLElement>('[data-testid="comparison"]'),
-  comparisonTitle: need<HTMLElement>('[data-testid="comparison-title"]'),
-  comparisonNote: need<HTMLElement>('[data-testid="comparison-note"]'),
+
+  compareEmpty: need<HTMLElement>('[data-testid="compare-empty"]'),
+  compareBody: need<HTMLElement>('[data-testid="compare-body"]'),
+  overlay: need<SVGSVGElement>("#overlay"),
+  overlayBase: need<SVGPolylineElement>('[data-testid="overlay-base"]'),
+  overlayMod: need<SVGPolylineElement>('[data-testid="overlay-mod"]'),
+  overlayFill: need<SVGPolygonElement>(".overlay-fill"),
+  overlayScale: need<HTMLElement>('[data-testid="overlay-scale"]'),
+  legendBase: need<HTMLElement>('[data-testid="legend-base"]'),
+  legendMod: need<HTMLElement>('[data-testid="legend-mod"]'),
   headBefore: need<HTMLElement>('[data-testid="compare-head-before"]'),
   headAfter: need<HTMLElement>('[data-testid="compare-head-after"]'),
   everBefore: need<HTMLElement>('[data-testid="compare-ever-before"]'),
   everAfter: need<HTMLElement>('[data-testid="compare-ever-after"]'),
+  everDelta: need<HTMLElement>('[data-testid="compare-ever-delta"]'),
   peakBefore: need<HTMLElement>('[data-testid="compare-peak-before"]'),
   peakAfter: need<HTMLElement>('[data-testid="compare-peak-after"]'),
+  peakDelta: need<HTMLElement>('[data-testid="compare-peak-delta"]'),
   daysBefore: need<HTMLElement>('[data-testid="compare-days-before"]'),
   daysAfter: need<HTMLElement>('[data-testid="compare-days-after"]'),
+  daysDelta: need<HTMLElement>('[data-testid="compare-days-delta"]'),
+  totalUnit: need<HTMLElement>('[data-testid="total-unit"]'),
+  compareNote: need<HTMLElement>('[data-testid="comparison-note"]'),
 };
 
 const ctx = ui.canvas.getContext("2d");
 const stillPlease = window.matchMedia?.("(prefers-reduced-motion: reduce)");
 
 let phase: Phase = "idle";
+let guess: Guess | null = null;
 let sim: Outbreak = makeOutbreak(readContacts());
 /** Positions as first drawn, used when the visitor asked for less motion. */
 let anchors: Array<{ x: number; y: number }> = snapshotPositions(sim.people);
-/** The last finished run: the "before" column, and the dashed line. */
+/** The first completed run. Fixed: every later run is compared against it, so
+ *  the comparison stays controlled however many times the visitor re-runs. */
+let baseline: RunSummary | null = null;
 let lastFinished: RunSummary | null = null;
-/** The run being compared against while the current one plays. */
-let ghost: RunSummary | null = null;
 let frameHandle = 0;
 let carryMs = 0;
 let lastFrameAt = 0;
@@ -80,6 +126,10 @@ function stillMode(): boolean {
 
 function snapshotPositions(people: Person[]): Array<{ x: number; y: number }> {
   return people.map((p) => ({ x: p.x, y: p.y }));
+}
+
+function scrollTo(target: HTMLElement): void {
+  target.scrollIntoView({ behavior: stillMode() ? "auto" : "smooth", block: "start" });
 }
 
 /* The loop ----------------------------------------------------------------- */
@@ -104,12 +154,12 @@ function frame(now: number): void {
 }
 
 function startRun(): void {
-  ghost = lastFinished;
   sim = makeOutbreak(readContacts());
   anchors = snapshotPositions(sim.people);
   phase = "running";
   carryMs = 0;
-  ui.comparison.hidden = true;
+  setHidden(ui.runSummary, true);
+  setHidden(ui.thresholdNotice, true);
 
   if (typeof requestAnimationFrame !== "function") {
     // No animation host (a test runner, say): the outbreak still has an
@@ -144,8 +194,15 @@ function finish(): void {
   // Nobody is infectious any more, so no meeting should still be drawn.
   sim.contacts.length = 0;
   const summary = sim.summary();
-  if (ghost) showComparison(ghost, summary);
+  const isFirst = baseline === null;
+  if (isFirst) baseline = summary;
   lastFinished = summary;
+
+  showRunSummary(summary, isFirst);
+  if (baseline && !isFirst) {
+    showCompare(baseline, summary);
+    scrollTo(ui.compareSection);
+  }
   render();
   updateChrome();
 }
@@ -153,11 +210,15 @@ function finish(): void {
 function startOver(): void {
   cancelAnimationFrame(frameHandle);
   phase = "idle";
+  baseline = null;
   lastFinished = null;
-  ghost = null;
+  ui.contacts.value = String(DEFAULT_CONTACTS);
   sim = makeOutbreak(readContacts());
   anchors = snapshotPositions(sim.people);
-  ui.comparison.hidden = true;
+  setHidden(ui.runSummary, true);
+  setHidden(ui.thresholdNotice, true);
+  setHidden(ui.compareBody, true);
+  setHidden(ui.compareEmpty, false);
   setHidden(ui.ghostCurve, true);
   render();
   updateChrome();
@@ -234,6 +295,15 @@ function drawField(): void {
       ctx.arc(x, y, r * (1 + t * 3), 0, Math.PI * 2);
       ctx.fillStyle = `rgba(214, 64, 44, ${0.3 * (1 - t)})`;
       ctx.fill();
+      // A crisp ring on the first few ticks, so a change of state reads as
+      // "this person just caught it" rather than as a dot quietly recolouring.
+      if (person.ticksInfected < 5) {
+        ctx.beginPath();
+        ctx.arc(x, y, r * (1.8 + person.ticksInfected * 0.5), 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(214, 64, 44, ${0.85 - person.ticksInfected * 0.16})`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
     }
     ctx.beginPath();
     ctx.arc(x, y, person.state === "infected" ? r * 1.25 : r, 0, Math.PI * 2);
@@ -244,9 +314,18 @@ function drawField(): void {
   });
 }
 
-/* Drawing the curve -------------------------------------------------------- */
+/* Drawing the curves ------------------------------------------------------- */
 
-const CHART = { left: 8, right: 592, top: 14, bottom: 200 };
+interface Geometry {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+const PLOT: Geometry = { left: 8, right: 592, top: 14, bottom: 200 };
+const X_STEPS = [20, 30, 45, 60, 90, 120, 140];
+const Y_STEPS = [6, 10, 15, 25, 40, 60, 90, 130, 180];
 
 function niceCeil(value: number, steps: number[]): number {
   for (const step of steps) if (value <= step) return step;
@@ -254,47 +333,62 @@ function niceCeil(value: number, steps: number[]): number {
 }
 
 function pointsFor(history: RunSummary["history"], xMax: number, yMax: number): string {
-  const sx = (CHART.right - CHART.left) / xMax;
-  const sy = (CHART.bottom - CHART.top) / yMax;
+  const sx = (PLOT.right - PLOT.left) / xMax;
+  const sy = (PLOT.bottom - PLOT.top) / yMax;
   return history
-    .map((p) => `${(CHART.left + p.day * sx).toFixed(1)},${(CHART.bottom - p.infected * sy).toFixed(1)}`)
+    .map(
+      (p) => `${(PLOT.left + p.day * sx).toFixed(1)},${(PLOT.bottom - p.infected * sy).toFixed(1)}`,
+    )
     .join(" ");
 }
 
+function closedUnder(points: string, lastDay: number, xMax: number): string {
+  if (points === "") return "";
+  const x = (PLOT.left + lastDay * ((PLOT.right - PLOT.left) / xMax)).toFixed(1);
+  return `${PLOT.left},${PLOT.bottom} ${points} ${x},${PLOT.bottom}`;
+}
+
 function drawChart(): void {
-  const xMax = niceCeil(
-    Math.max(sim.day, ghost?.lastDay ?? 0, lastFinished?.lastDay ?? 0, 20),
-    [20, 30, 45, 60, 90, 120, 140],
-  );
-  const yMax = niceCeil(
-    Math.max(sim.peakInfected, ghost?.peakInfected ?? 0, 6),
-    [6, 10, 15, 25, 40, 60, 90, 130, 180],
-  );
+  const xMax = niceCeil(Math.max(sim.day, baseline?.lastDay ?? 0, 20), X_STEPS);
+  const yMax = niceCeil(Math.max(sim.peakInfected, baseline?.peakInfected ?? 0, 6), Y_STEPS);
 
   const current = pointsFor(sim.history, xMax, yMax);
-  setHidden(ui.chartEmpty, sim.history.length > 1 || ghost !== null);
+  setHidden(ui.chartEmpty, sim.history.length > 1 || baseline !== null);
   ui.curve.setAttribute("points", current);
-  ui.curveFill.setAttribute(
-    "points",
-    current === ""
-      ? ""
-      : `${CHART.left},${CHART.bottom} ${current} ${(CHART.left + sim.day * ((CHART.right - CHART.left) / xMax)).toFixed(1)},${CHART.bottom}`,
-  );
+  ui.curveFill.setAttribute("points", closedUnder(current, sim.day, xMax));
 
-  if (ghost) {
-    ui.ghostCurve.setAttribute("points", pointsFor(ghost.history, xMax, yMax));
-    setHidden(ui.ghostCurve, false);
-  } else {
-    setHidden(ui.ghostCurve, true);
+  // During a re-run the baseline sits underneath as a dashed line, so the
+  // difference is visible while it happens, not only afterwards.
+  const showGhost = baseline !== null && lastFinished !== baseline;
+  if (baseline && showGhost) {
+    ui.ghostCurve.setAttribute("points", pointsFor(baseline.history, xMax, yMax));
   }
+  setHidden(ui.ghostCurve, !showGhost);
 
-  ui.chartY.textContent = ghost
-    ? `Infected at once (0–${yMax}) · dashed = ${ghost.contactsPerDay} a day`
+  ui.chartY.textContent = showGhost
+    ? `Infected at once (0–${yMax}) · dashed = baseline`
     : `Infected at once (0–${yMax})`;
   ui.chartX.textContent = `Day 0–${xMax}`;
   ui.chart.setAttribute(
     "aria-label",
     `Infected people over time. Day ${sim.day} of up to ${xMax}. ${sim.infected} infected now, ${sim.peakInfected} at the worst.`,
+  );
+}
+
+function drawOverlay(base: RunSummary, mod: RunSummary): void {
+  const xMax = niceCeil(Math.max(base.lastDay, mod.lastDay, 20), X_STEPS);
+  const yMax = niceCeil(Math.max(base.peakInfected, mod.peakInfected, 6), Y_STEPS);
+  const modPoints = pointsFor(mod.history, xMax, yMax);
+
+  ui.overlayBase.setAttribute("points", pointsFor(base.history, xMax, yMax));
+  ui.overlayMod.setAttribute("points", modPoints);
+  ui.overlayFill.setAttribute("points", closedUnder(modPoints, mod.lastDay, xMax));
+  ui.legendBase.textContent = `Baseline — ${base.contactsPerDay} contacts a day`;
+  ui.legendMod.textContent = `Yours — ${mod.contactsPerDay} contacts a day`;
+  ui.overlayScale.textContent = `0–${yMax} infected · day 0–${xMax}`;
+  ui.overlay.setAttribute(
+    "aria-label",
+    `Both outbreaks on the same axes. Baseline at ${base.contactsPerDay} contacts a day peaked at ${base.peakInfected}; yours at ${mod.contactsPerDay} peaked at ${mod.peakInfected}.`,
   );
 }
 
@@ -313,99 +407,205 @@ function render(): void {
   );
 }
 
+const TENDENCY_LABEL: Record<Tendency, string> = {
+  growing: "Growing",
+  shrinking: "Shrinking",
+  balanced: "On the line",
+};
+
 function updateChrome(): void {
   const c = readContacts();
   ui.contactsValue.textContent = `${c} contacts a day, each person`;
 
   if (phase === "running") ui.run.textContent = "Pause";
   else if (phase === "paused") ui.run.textContent = "Resume";
-  else if (lastFinished) ui.run.textContent = `Run again — ${c} a day`;
+  else if (baseline) ui.run.textContent = `Run again — ${c} a day`;
   else ui.run.textContent = "Start the outbreak";
 
-  const changed = lastFinished !== null && c !== lastFinished.contactsPerDay;
-  ui.run.dataset.nudge = String(changed && phase !== "running");
+  const moved = baseline !== null && c !== baseline.contactsPerDay;
+  ui.run.dataset.nudge = String(moved && phase !== "running");
   ui.sliderBox.dataset.highlight = String(
-    phase === "done" && lastFinished !== null && c === lastFinished.contactsPerDay,
+    phase === "done" && baseline !== null && c === baseline.contactsPerDay,
   );
+
+  // Act 02 only becomes an instruction once there is a baseline to change.
+  ui.actTitle.textContent = baseline ? "Now change just one thing" : "Then change just one thing";
+
+  updateBaselineMarker();
+  updateTendency(c);
   ui.prompt.textContent = promptFor(c);
+}
+
+function updateBaselineMarker(): void {
+  if (!baseline) {
+    setHidden(ui.baselineMarker, true);
+    return;
+  }
+  const min = Number(ui.contacts.min);
+  const max = Number(ui.contacts.max);
+  const pct = (baseline.contactsPerDay - min) / (max - min);
+  // The thumb is about 16px wide and its centre never reaches the track ends,
+  // so a plain percentage would drift by half a thumb at each extreme.
+  ui.baselineMarker.style.left = `calc(8px + (100% - 16px) * ${pct})`;
+  ui.baselineLabel.textContent = `baseline ${baseline.contactsPerDay}`;
+  setHidden(ui.baselineMarker, false);
+}
+
+function updateTendency(c: number): void {
+  // Withheld during act 01 on purpose: the visitor should meet the threshold
+  // by running into it, not by reading a gauge before they have seen anything.
+  if (!baseline) {
+    setHidden(ui.tendency, true);
+    setHidden(ui.thresholdNotice, true);
+    return;
+  }
+  const now = spreadTendency(c);
+  const onward = reproductionNumber(c);
+  ui.tendencyPill.textContent = TENDENCY_LABEL[now];
+  ui.tendencyPill.dataset.tendency = now;
+  ui.tendencyDetail.textContent = `each infected person passes it to about ${onward.toFixed(1)} others`;
+  setHidden(ui.tendency, false);
+
+  const before = spreadTendency(baseline.contactsPerDay);
+  if (now === before || phase === "running") {
+    setHidden(ui.thresholdNotice, true);
+    return;
+  }
+  ui.thresholdNotice.textContent =
+    now === "growing"
+      ? `You crossed back over the threshold. At ${c} a day each infection makes more than one more, so the outbreak has room to grow again.`
+      : `You crossed the threshold. At ${c} a day each infection makes less than one more — every round should now be smaller than the one before it.`;
+  setHidden(ui.thresholdNotice, false);
 }
 
 function promptFor(c: number): string {
   if (phase === "running" || phase === "paused") {
     return "Red is infectious. Green has had it and can't catch it again. Every line is one meeting.";
   }
-  if (!lastFinished) {
+  if (!baseline) {
     return `One person is infected. Everyone else is healthy. Press start and watch what ${c} contacts a day does.`;
   }
-  const { everInfected, peakInfected, population, contactsPerDay } = lastFinished;
-
-  // The visitor has moved the slider since the last run: point at the rerun.
-  if (c !== contactsPerDay) {
-    return `Same town, same virus, same first patient — now at ${c} contacts a day instead of ${contactsPerDay}. Run it.`;
+  // A comparison has already landed and the slider hasn't moved since: send
+  // them to the result, not back to a button they have just pressed.
+  if (lastFinished && lastFinished !== baseline && c === lastFinished.contactsPerDay) {
+    return "Both runs are drawn on the same axes below — same people, same first patient, same run of luck. Move the slider again to try another version.";
   }
-
-  // A comparison just landed. Say what it means, not what to do next.
-  if (ghost) {
-    const gap = ghost.everInfected - everInfected;
-    if (gap > 0) {
-      return `The dashed line is the town you just left. ${gap} people who caught it at ${ghost.contactsPerDay} contacts a day never caught it at ${contactsPerDay} — same virus, same first patient, one number moved.`;
-    }
-    if (gap < 0) {
-      return `The dashed line is the town you just left. Going the other way cost ${-gap} more people. Nothing about the virus changed.`;
-    }
-    return "Both runs came out the same. The seed is fixed, so that is the model talking, not luck.";
+  if (c !== baseline.contactsPerDay) {
+    const step = Math.abs(c - baseline.contactsPerDay);
+    return `Same town, same virus, same first patient — ${step} ${step === 1 ? "contact" : "contacts"} a day ${c < baseline.contactsPerDay ? "fewer" : "more"}. Run it and see what that alone is worth.`;
   }
-
-  return everInfected > population * 0.25
-    ? `${everInfected} of ${population} people caught it, and ${peakInfected} were sick on the worst day. Now change just one thing — move the slider — and run the same town again.`
-    : `Only ${everInfected} of ${population} people ever caught it. Move the slider up and watch how little it takes to change that.`;
+  return "Move the slider. Everything else stays exactly as it was — same people, same first patient, same run of luck — so whatever changes is down to the one number you touched.";
 }
 
-function showComparison(before: RunSummary, after: RunSummary): void {
-  ui.headBefore.textContent = `${before.contactsPerDay} a day`;
-  ui.headAfter.textContent = `${after.contactsPerDay} a day`;
-  ui.everBefore.textContent = `${before.everInfected} of ${before.population}`;
-  ui.everAfter.textContent = `${after.everInfected} of ${after.population}`;
-  ui.peakBefore.textContent = `${before.peakInfected} at once`;
-  ui.peakAfter.textContent = `${after.peakInfected} at once`;
-  ui.daysBefore.textContent = `${before.lastDay} days`;
-  ui.daysAfter.textContent = `${after.lastDay} days`;
-  ui.comparisonTitle.textContent =
-    after.contactsPerDay === before.contactsPerDay
-      ? "You changed nothing"
-      : `You changed ${Math.abs(after.contactsPerDay - before.contactsPerDay)} ${
-          Math.abs(after.contactsPerDay - before.contactsPerDay) === 1 ? "contact" : "contacts"
-        } a day`;
-  ui.comparisonNote.textContent = noteFor(before, after);
-  ui.comparison.hidden = false;
+/* Prediction ---------------------------------------------------------------- */
+
+const GUESS_PHRASE: Record<Guess, string> = {
+  fizzle: "it would die out quickly",
+  slow: "it would spread slowly",
+  big: "it would become a large outbreak",
+};
+
+const OUTCOME_PHRASE: Record<Guess, string> = {
+  fizzle: "it died out",
+  slow: "it spread, but slowly",
+  big: "it became a large outbreak",
+};
+
+function outcomeOf(summary: RunSummary): Guess {
+  const share = summary.everInfected / summary.population;
+  if (share <= 0.1) return "fizzle";
+  if (share <= 0.35) return "slow";
+  return "big";
 }
 
-function noteFor(before: RunSummary, after: RunSummary): string {
-  const step = after.contactsPerDay - before.contactsPerDay;
+function choosePrediction(kind: Guess): void {
+  guess = kind;
+  for (const button of ui.predictions) {
+    button.setAttribute("aria-pressed", String(button.dataset.predict === kind));
+  }
+  ui.predictionEcho.textContent = `You said ${GUESS_PHRASE[kind]}. Hold that thought — run the town and find out.`;
+  setHidden(ui.predictionEcho, false);
+  scrollTo(ui.watchSection);
+}
+
+function showRunSummary(summary: RunSummary, isFirst: boolean): void {
+  ui.summaryPeak.textContent = `${summary.peakInfected} at once`;
+  ui.summaryTotal.textContent = `${summary.everInfected} of ${summary.population}`;
+  ui.summaryDays.textContent = `${summary.lastDay} days`;
+
+  const detail = `${summary.everInfected} of ${summary.population} caught it, ${summary.peakInfected} of them on the worst day`;
+  if (isFirst && guess) {
+    const actual = outcomeOf(summary);
+    ui.runVerdict.textContent =
+      guess === actual
+        ? `You called it: ${OUTCOME_PHRASE[actual]}. ${detail}.`
+        : `You said ${GUESS_PHRASE[guess]}. In fact ${OUTCOME_PHRASE[actual]} — ${detail}.`;
+  } else {
+    ui.runVerdict.textContent = `${detail}.`;
+  }
+  setHidden(ui.runSummary, false);
+}
+
+function showCompare(base: RunSummary, mod: RunSummary): void {
+  drawOverlay(base, mod);
+
+  ui.headBefore.textContent = `${base.contactsPerDay} a day`;
+  ui.headAfter.textContent = `${mod.contactsPerDay} a day`;
+  ui.peakBefore.textContent = `${base.peakInfected}`;
+  ui.peakAfter.textContent = `${mod.peakInfected}`;
+  // "141 of 180" twice in one row collides at 390px, so the population moves
+  // into the row header and the cells stay short enough to sit side by side.
+  ui.totalUnit.textContent = `of ${base.population}`;
+  ui.everBefore.textContent = `${base.everInfected}`;
+  ui.everAfter.textContent = `${mod.everInfected}`;
+  ui.daysBefore.textContent = `${base.lastDay} days`;
+  ui.daysAfter.textContent = `${mod.lastDay} days`;
+
+  setDelta(ui.peakDelta, mod.peakInfected - base.peakInfected);
+  setDelta(ui.everDelta, mod.everInfected - base.everInfected);
+  // Duration is left uncoloured on purpose: fewer days is good when the
+  // outbreak was stopped and bad when it was merely flattened, so green here
+  // would be the page asserting something it doesn't know.
+  setDelta(ui.daysDelta, mod.lastDay - base.lastDay, true);
+
+  ui.compareNote.textContent = noteFor(base, mod);
+  setHidden(ui.compareEmpty, true);
+  setHidden(ui.compareBody, false);
+}
+
+function setDelta(cell: HTMLElement, delta: number, neutral = false): void {
+  cell.textContent = delta === 0 ? "no change" : `${delta > 0 ? "+" : "−"}${Math.abs(delta)}`;
+  cell.dataset.dir = neutral || delta === 0 ? "same" : delta > 0 ? "up" : "down";
+}
+
+function noteFor(base: RunSummary, mod: RunSummary): string {
+  const step = mod.contactsPerDay - base.contactsPerDay;
   if (step === 0) {
-    return "Identical settings, identical outbreak — the random seed is fixed, so nothing here is luck. Move the slider and try again.";
+    return "Identical settings, identical outbreak — the seed is fixed, so none of this is luck. Move the slider and run it again.";
   }
-  const collapsed = after.everInfected <= before.everInfected * 0.3;
-  const grew = after.everInfected > before.everInfected * 1.3;
-  if (collapsed) {
-    return `${Math.abs(step)} fewer ${Math.abs(step) === 1 ? "contact" : "contacts"} a day didn't slow this outbreak down. It stopped it — the chain broke before it found most of the town.`;
+  const size = Math.abs(step);
+  const contacts = `${size} ${size === 1 ? "contact" : "contacts"} a day`;
+  const spared = base.everInfected - mod.everInfected;
+
+  if (mod.everInfected <= base.everInfected * 0.3) {
+    return `${contacts} ${step < 0 ? "fewer" : "more"} didn't slow this outbreak down. It stopped it: ${spared} people who caught it in the baseline never caught it here, because the chain broke before it found the town.`;
   }
-  if (grew) {
-    return `${step} more a day, and the outbreak reached ${after.everInfected - before.everInfected} extra people. Nothing about the virus changed.`;
+  if (mod.everInfected > base.everInfected * 1.3) {
+    return `${contacts} more, and the outbreak reached ${Math.abs(spared)} extra people. Nothing about the virus changed.`;
   }
-  return after.peakInfected < before.peakInfected
-    ? `Fewer people sick at once (${before.peakInfected} → ${after.peakInfected}), often spread over more days. That gap is what a hospital feels.`
-    : `Not much moved. Keep going — the change that matters is not evenly spaced along this slider.`;
+  if (mod.peakInfected < base.peakInfected) {
+    return `The worst day went from ${base.peakInfected} sick at once to ${mod.peakInfected}, spread over ${mod.lastDay - base.lastDay > 0 ? "more" : "fewer"} days. Same people, same virus — fewer chances.`;
+  }
+  return "Not much moved. Keep going: the change that matters isn't spread evenly along this slider, and there is a point where it stops being gradual.";
 }
 
-/* Wiring ------------------------------------------------------------------- */
+/* Test seam ----------------------------------------------------------------- */
 
-// Test seam. Headless Chrome runs only a frame or so per second of virtual
-// time, so an animation driven by requestAnimationFrame is invisible to a
-// screenshot or a --dump-dom check: the page sits on day 0 forever. This lets
-// an automated check advance the same simulation the visitor sees, without
-// waiting for frames, so the rendered page can actually be inspected mid- and
-// post-outbreak. It reads and drives existing state; it cannot set an outcome.
+// Headless Chrome runs only a frame or so per second of virtual time, so an
+// animation driven by requestAnimationFrame is invisible to a screenshot or a
+// --dump-dom check: the page sits on day 0 forever. This lets an automated
+// check advance the same simulation the visitor sees, without waiting for
+// frames. It reads and drives existing state; it cannot set an outcome.
 declare global {
   interface Window {
     outbreakHarness?: { advanceDays: (days: number) => void };
@@ -420,6 +620,14 @@ window.outbreakHarness = {
     if (sim.finished && phase === "running") finish();
   },
 };
+
+/* Wiring ------------------------------------------------------------------- */
+
+for (const button of ui.predictions) {
+  button.addEventListener("click", () => {
+    choosePrediction(button.dataset.predict as Guess);
+  });
+}
 
 ui.run.addEventListener("click", () => {
   if (phase === "running") pause();
@@ -437,6 +645,7 @@ window.addEventListener("resize", () => {
   // Positions live in a unit square, so a resize only re-maps them: the
   // outbreak in progress is untouched.
   render();
+  updateBaselineMarker();
 });
 
 render();

@@ -8,6 +8,7 @@ import {
   MAX_CONTACTS,
   MIN_CONTACTS,
   simulate,
+  spreadTendency,
   tippingPoint,
 } from "../sim";
 
@@ -66,16 +67,123 @@ describe("core interaction: the controls exist and are usable", () => {
     ).toBeTruthy();
   });
 
-  it("starts with the comparison hidden, and backs `hidden` with CSS", () => {
-    const compare = doc.querySelector('[data-testid="comparison"]');
-    expect(compare!.hasAttribute("hidden")).toBe(true);
-    // `hidden` is only a user-agent rule, and any author `display` beats it.
-    // The comparison panel sets `display: grid`, so without this override it
-    // would render while every markup assertion still said it was hidden.
+  it("backs every `hidden` element with a CSS override", () => {
+    // `hidden` is only a user-agent rule, and any author `display` beats it at
+    // any specificity. Several panels here set their own display, so without
+    // an explicit override they would sit on screen while every markup
+    // assertion still reported them hidden. Derived from the built page rather
+    // than a list, so a section added later is covered without editing this.
+    const css = builtCss().replace(/\s+/g, "");
+    const hiddenElements = Array.from(doc.querySelectorAll("[hidden]"));
+    expect(hiddenElements.length, "the page reveals content as the story moves").toBeGreaterThan(4);
+
+    for (const element of hiddenElements) {
+      const cls = element.classList[0];
+      expect(cls, `<${element.tagName.toLowerCase()} hidden> needs a class to key the override on`)
+        .toBeTruthy();
+      expect(css, `.${cls}[hidden] { display: none } is missing from the stylesheet`).toContain(
+        `.${cls}[hidden]{display:none`,
+      );
+    }
+  });
+
+  it("starts the comparison empty and the tendency gauge hidden", () => {
+    expect(doc.querySelector('[data-testid="compare-body"]')!.hasAttribute("hidden")).toBe(true);
+    expect(doc.querySelector('[data-testid="compare-empty"]')!.hasAttribute("hidden")).toBe(false);
+    // The threshold is meant to be discovered by running into it, not read off
+    // a gauge before the visitor has seen anything happen.
+    expect(doc.querySelector('[data-testid="tendency"]')!.hasAttribute("hidden")).toBe(true);
+    expect(doc.querySelector('[data-testid="run-summary"]')!.hasAttribute("hidden")).toBe(true);
+    expect(doc.querySelector('[data-testid="baseline-marker"]')!.hasAttribute("hidden")).toBe(true);
+  });
+});
+
+describe("the story: predict, watch, change one thing, compare", () => {
+  it("asks for a prediction before anything runs", () => {
+    const choices = Array.from(doc.querySelectorAll("[data-predict]"));
+    expect(choices.length, "three ways the outbreak could go").toBe(3);
+    expect(choices.map((c) => c.getAttribute("data-predict")).sort()).toEqual([
+      "big",
+      "fizzle",
+      "slow",
+    ]);
+    for (const choice of choices) {
+      expect(choice.tagName).toBe("BUTTON");
+      expect(choice.textContent?.trim()).not.toBe("");
+    }
+  });
+
+  it("numbers its steps contiguously, in document order", () => {
+    // Caught by a screenshot: the "change one thing" step used to share the
+    // watch section's marker and swap in after the first run, so a first-time
+    // reader saw 01, 03, 04 and a hole where 02 should be.
+    const numbers = Array.from(doc.querySelectorAll(".step"))
+      .map((el) => /^(\d+)/.exec(el.textContent!.trim())?.[1])
+      .filter((n): n is string => n !== undefined)
+      .map(Number);
+    expect(numbers.length, "the story is told in numbered beats").toBeGreaterThan(3);
+    expect(numbers, "a reader shouldn't meet a gap in the numbering").toEqual(
+      numbers.map((_, i) => i + 1),
+    );
+  });
+
+  it("puts the prediction ahead of the simulation in the document", () => {
+    const predict = doc.querySelector("#predict")!;
+    const watch = doc.querySelector("#watch")!;
     expect(
-      builtCss().replace(/\s+/g, ""),
-      "an element that sets its own display needs an explicit [hidden] override",
-    ).toContain(".compare[hidden]{display:none");
+      predict.compareDocumentPosition(watch) & 4,
+      "the prediction must come before the town, or it isn't a prediction",
+    ).toBeTruthy();
+  });
+
+  it("keeps the run button and the slider in the same control group", () => {
+    const controls = doc.querySelector(".controls")!;
+    expect(controls.querySelector('[data-testid="interactive-control"]')).toBeTruthy();
+    expect(
+      controls.querySelector('input[type="range"]'),
+      "splitting these across sections would strand one of them off-screen on a phone",
+    ).toBeTruthy();
+  });
+
+  it("gives the baseline run something to be compared against", () => {
+    // The comparison is only controlled if the second run differs in exactly
+    // one input. Everything except contactsPerDay comes from BASE_CONFIG.
+    const base = simulate(DEFAULT_CONTACTS);
+    const changed = simulate(6);
+    expect(base.population).toBe(changed.population);
+    expect(base.history[0]!.infected).toBe(changed.history[0]!.infected);
+    expect(base.peakInfected).toBeGreaterThan(changed.peakInfected);
+    expect(base.everInfected).toBeGreaterThan(changed.everInfected);
+  });
+
+  it("makes the baseline run a large outbreak, so the prediction has an answer", () => {
+    const base = simulate(DEFAULT_CONTACTS);
+    expect(base.everInfected / base.population).toBeGreaterThan(0.35);
+  });
+});
+
+describe("spread tendency: the threshold in plain clothes", () => {
+  it("reads growing above the line and shrinking below it", () => {
+    expect(spreadTendency(tippingPoint() + 1)).toBe("growing");
+    expect(spreadTendency(tippingPoint() - 1)).toBe("shrinking");
+    expect(spreadTendency(tippingPoint())).toBe("balanced");
+  });
+
+  it("agrees with what the simulation actually does", () => {
+    // The gauge is a claim about the model. If they ever disagree, the page is
+    // lying to the visitor in a way no screenshot would show.
+    for (let c = MIN_CONTACTS; c <= MAX_CONTACTS; c += 1) {
+      const share = simulate(c).everInfected / BASE_CONFIG.population;
+      if (spreadTendency(c) === "shrinking") {
+        expect(share, `${c} contacts a day is labelled shrinking but infected ${share}`).toBeLessThan(
+          0.2,
+        );
+      }
+    }
+  });
+
+  it("says the default is growing, so act 02 starts above the line", () => {
+    expect(spreadTendency(DEFAULT_CONTACTS)).toBe("growing");
   });
 });
 

@@ -114,6 +114,40 @@ generators (Astro included) need `base` set explicitly, and getting it wrong
 looks fine locally while every asset 404s on the live URL. And commit the
 updated `pnpm-lock.yaml`: CI installs with `--frozen-lockfile`.
 
+## What this prototype is, and what it refuses to be
+
+An interactive explainer of one idea: **a small change in contact frequency can
+flip an outbreak's outcome, because transmission multiplies rather than adds.**
+The page is a narrative, not a dashboard, and it runs in beats:
+
+`predict → 01 Watch → 02 Change one thing → 03 Compare → 04 Why?`
+
+Rules that keep it that shape. Break them deliberately, not by accident:
+
+- **One mechanic only.** Contact frequency is the sole variable. No vaccination,
+  masks, lockdowns, age groups, deaths, hospital capacity, variants, real COVID
+  data, or maps. Every one of those is a different explainer.
+- **The threshold is discovered, not announced.** The tendency gauge stays
+  hidden until the first run finishes; the visitor should run into the line
+  before reading about it. Same reason the prediction comes before the town.
+- **Phenomenon before mechanism.** `04 Why?` explains the feedback loop *after*
+  the visitor has seen it. It is not a place to grow an SIR theory section, and
+  the page never says R0, beta or gamma.
+- **The comparison must stay controlled.** `baseline` is the first completed run
+  and never moves; every later run is compared against it, and everything except
+  `contactsPerDay` comes from `BASE_CONFIG`. If a second input ever becomes
+  adjustable, the comparison stops meaning anything.
+- **Controls stay together.** The run button and the slider live in the same
+  control group. Splitting them across sections strands one off-screen at 390px.
+- **The prose is pinned to the model.** `spec/assignment-1.test.ts` asserts that
+  the copy's population, illness length and tipping point match what `sim.ts`
+  computes, and that the step numbers run 1..n with no gap. Retune the model and
+  the copy goes red, which is the point.
+
+`sim.ts` is deliberately DOM-free and viewport-independent (positions live in a
+unit square) so the outcome can't change when the window resizes, and so the
+behaviour can be tested without a browser.
+
 ## Seeing the rendered page on this machine
 
 There's no `agent-browser` CLI installed here, so ground truth comes from

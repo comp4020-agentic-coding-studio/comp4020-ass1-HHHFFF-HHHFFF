@@ -3,9 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>
-      One small change — how often you see people decides the outbreak
-    </title>
+    <title>One small change — how often you see people decides the outbreak</title>
     <meta
       name="description"
       content="An interactive explainer: same town, same virus, same first patient. Move one slider and watch an epidemic become a footnote."
@@ -13,13 +11,13 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <a class="skip-link" href="#explore">Skip to the simulation</a>
+    <a class="skip-link" href="#predict">Skip to the explainer</a>
 
     <header class="masthead">
       <p class="wordmark">An interactive explainer</p>
       <nav aria-label="Sections">
-        <a href="#explore">The town</a>
-        <a href="#point">The point</a>
+        <a href="#predict">Start</a>
+        <a href="#why">Why</a>
       </nav>
     </header>
 
@@ -27,16 +25,43 @@
       <section class="hero">
         <h1>One small change</h1>
         <p class="dek">
-          A town of 180 people. One of them is infected. The virus never
-          changes, the town never changes, and the first patient is always the
-          same person. The only thing you get to move is
-          <em>how many people each person meets in a day</em> — and that alone
-          decides whether this is a footnote or an epidemic.
+          A town of 180 people. One of them is infected. The virus never changes, the town never
+          changes, and the first patient is always the same person. The only thing you get to move
+          is <em>how many people each person meets in a day</em> — and that alone decides whether
+          this is a footnote or an epidemic.
         </p>
       </section>
 
-      <section id="explore" class="stage" aria-labelledby="stage-heading">
-        <h2 id="stage-heading" class="visually-hidden">The simulation</h2>
+      <!-- 00 — commit to an answer before seeing one. -->
+      <section id="predict" class="act" aria-labelledby="predict-title">
+        <p class="step">Before we start</p>
+        <h2 id="predict-title" class="act-title">
+          One infected person walks into this town. What do you think happens next?
+        </h2>
+        <p class="act-lede">
+          No trick, and no maths yet. Pick the one you'd bet on — you'll find out in about ten
+          seconds.
+        </p>
+        <div class="choices" role="group" aria-label="Your prediction">
+          <button type="button" class="choice" data-predict="fizzle" data-testid="predict-fizzle">
+            It dies out quickly
+          </button>
+          <button type="button" class="choice" data-predict="slow" data-testid="predict-slow">
+            It spreads slowly
+          </button>
+          <button type="button" class="choice" data-predict="big" data-testid="predict-big">
+            It becomes a large outbreak
+          </button>
+        </div>
+        <p class="act-echo" data-testid="prediction-echo" hidden></p>
+      </section>
+
+      <!-- 01 Watch, then 02 Change one thing: the same apparatus, a new
+           instruction. The step marker and title advance in place so the
+           run button and the slider never get separated from each other. -->
+      <section id="watch" class="act stage" aria-labelledby="watch-title">
+        <p class="step" data-testid="step-marker">01 · Watch</p>
+        <h2 id="watch-title" class="act-title">One person is infected. Everyone else is healthy.</h2>
 
         <div class="stage-grid">
           <figure class="field">
@@ -84,20 +109,10 @@
                 data-testid="chart"
               >
                 <line class="axis" x1="0" y1="200" x2="600" y2="200" />
-                <polyline
-                  class="ghost-curve"
-                  data-testid="ghost-curve"
-                  points=""
-                  hidden
-                />
+                <polyline class="ghost-curve" data-testid="ghost-curve" points="" hidden />
                 <polygon class="curve-fill" points="" />
                 <polyline class="curve" data-testid="curve" points="" />
-                <text
-                  class="chart-empty"
-                  data-testid="chart-empty"
-                  x="300"
-                  y="110"
-                >
+                <text class="chart-empty" data-testid="chart-empty" x="300" y="110">
                   the outbreak curve appears here
                 </text>
               </svg>
@@ -108,117 +123,211 @@
             </figure>
 
             <div class="controls">
-              <button
-                id="run"
-                class="run"
-                type="button"
-                data-testid="interactive-control"
-              >
+              <button id="run" class="run" type="button" data-testid="interactive-control">
                 Start the outbreak
               </button>
 
               <div class="slider">
-                <label for="contacts">How social is this town?</label>
-                <input
-                  id="contacts"
-                  type="range"
-                  min="1"
-                  max="16"
-                  step="1"
-                  value="10"
-                  data-testid="contacts"
-                />
+                <label for="contacts">How social is this community?</label>
+                <div class="slider-track">
+                  <input
+                    id="contacts"
+                    type="range"
+                    min="1"
+                    max="16"
+                    step="1"
+                    value="10"
+                    data-testid="contacts"
+                  />
+                  <span class="baseline-marker" data-testid="baseline-marker" hidden>
+                    <span class="baseline-tick"></span>
+                    <span class="baseline-label" data-testid="baseline-label">baseline</span>
+                  </span>
+                </div>
                 <output for="contacts" data-testid="contacts-value"
                   >10 contacts a day, each person</output
                 >
               </div>
 
-              <button
-                id="reset"
-                class="reset"
-                type="button"
-                data-testid="reset"
-              >
-                Start over
-              </button>
+              <button id="reset" class="reset" type="button" data-testid="reset">Start over</button>
             </div>
 
-            <div class="compare" data-testid="comparison" hidden>
-              <h3 class="compare-title" data-testid="comparison-title">
-                Same town, one change
-              </h3>
-              <table class="compare-table">
-                <thead>
-                  <tr>
-                    <th scope="col">
-                      <span class="visually-hidden">Measure</span>
-                    </th>
-                    <th scope="col" data-testid="compare-head-before">
-                      Before
-                    </th>
-                    <th scope="col" data-testid="compare-head-after">After</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <th scope="row">Ever infected</th>
-                    <td data-testid="compare-ever-before">—</td>
-                    <td data-testid="compare-ever-after">—</td>
-                  </tr>
-                  <tr>
-                    <th scope="row">Worst day</th>
-                    <td data-testid="compare-peak-before">—</td>
-                    <td data-testid="compare-peak-after">—</td>
-                  </tr>
-                  <tr>
-                    <th scope="row">Outbreak lasted</th>
-                    <td data-testid="compare-days-before">—</td>
-                    <td data-testid="compare-days-after">—</td>
-                  </tr>
-                </tbody>
-              </table>
-              <p class="compare-note" data-testid="comparison-note"></p>
+            <!-- Held back until after the first run: the visitor should meet
+                 the threshold by finding it, not by reading it. -->
+            <div class="tendency" data-testid="tendency" hidden>
+              <span class="tendency-pill" data-testid="tendency-pill">Growing</span>
+              <span class="tendency-detail" data-testid="tendency-detail"></span>
+            </div>
+            <p class="threshold-notice" data-testid="threshold-notice" hidden></p>
+
+            <div class="run-summary" data-testid="run-summary" hidden>
+              <p class="run-verdict" data-testid="run-verdict"></p>
+              <dl class="summary-grid">
+                <div>
+                  <dt>Peak infected</dt>
+                  <dd data-testid="summary-peak">—</dd>
+                </div>
+                <div>
+                  <dt>Total infected</dt>
+                  <dd data-testid="summary-total">—</dd>
+                </div>
+                <div>
+                  <dt>Outbreak duration</dt>
+                  <dd data-testid="summary-days">—</dd>
+                </div>
+              </dl>
             </div>
           </div>
         </div>
 
+      </section>
+
+      <!-- 02 — the instruction, given its own beat. The slider itself stays up
+           in the control group with the run button: separating them would
+           strand one of the two off-screen on a phone. -->
+      <section id="change" class="act act-thin" aria-labelledby="change-title">
+        <p class="step">02 · Change one thing</p>
+        <h2 id="change-title" class="act-title" data-testid="act-title">
+          Then change just one thing
+        </h2>
         <p class="prompt" role="status" data-testid="prompt">
-          One person is infected. Everyone else is healthy. Press start and
-          watch what ten contacts a day does.
+          One person is infected. Everyone else is healthy. Press start and watch what ten contacts
+          a day does.
         </p>
       </section>
 
-      <section id="point" class="closing">
-        <h2>The point</h2>
+      <!-- 03 — both runs on one set of axes. -->
+      <section id="compare" class="act" aria-labelledby="compare-title">
+        <p class="step">03 · Compare</p>
+        <h2 id="compare-title" class="act-title">Same town, one number moved</h2>
+
+        <p class="compare-empty" data-testid="compare-empty">
+          Run the town once, change the slider, and run it again. Both outbreaks get drawn on the
+          same axes here — same population, same first patient, same seed, so the only difference
+          you can see is the one you made.
+        </p>
+
+        <div class="compare-body" data-testid="compare-body" hidden>
+          <figure class="overlay-wrap">
+            <svg
+              id="overlay"
+              class="chart chart-overlay"
+              viewBox="0 0 600 220"
+              preserveAspectRatio="none"
+              role="img"
+              aria-label="Both outbreaks drawn on the same axes."
+              data-testid="overlay"
+            >
+              <line class="axis" x1="0" y1="200" x2="600" y2="200" />
+              <polygon class="overlay-fill" points="" />
+              <polyline class="overlay-base" data-testid="overlay-base" points="" />
+              <polyline class="overlay-mod" data-testid="overlay-mod" points="" />
+            </svg>
+            <figcaption class="overlay-legend">
+              <span class="key key-base" data-testid="legend-base">Baseline</span>
+              <span class="key key-mod" data-testid="legend-mod">Your version</span>
+              <span class="overlay-scale" data-testid="overlay-scale"></span>
+            </figcaption>
+          </figure>
+
+          <table class="compare-table">
+            <caption class="visually-hidden">
+              Baseline outbreak compared with your version
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col"><span class="visually-hidden">Measure</span></th>
+                <th scope="col" data-testid="compare-head-before">Baseline</th>
+                <th scope="col" data-testid="compare-head-after">Yours</th>
+                <th scope="col">Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Peak infected</th>
+                <td data-testid="compare-peak-before">—</td>
+                <td data-testid="compare-peak-after">—</td>
+                <td class="delta" data-testid="compare-peak-delta">—</td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  Total infected <span class="unit" data-testid="total-unit"></span>
+                </th>
+                <td data-testid="compare-ever-before">—</td>
+                <td data-testid="compare-ever-after">—</td>
+                <td class="delta" data-testid="compare-ever-delta">—</td>
+              </tr>
+              <tr>
+                <th scope="row">Outbreak duration</th>
+                <td data-testid="compare-days-before">—</td>
+                <td data-testid="compare-days-after">—</td>
+                <td class="delta" data-testid="compare-days-delta">—</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p class="compare-note" data-testid="comparison-note"></p>
+        </div>
+      </section>
+
+      <!-- 04 — the mechanism, after the phenomenon. -->
+      <section id="why" class="act closing" aria-labelledby="why-title">
+        <p class="step">04 · Why?</p>
+        <h2 id="why-title">Why did such a small change matter?</h2>
         <p>
-          Nothing about the virus moved. What moved was a number that gets
-          <em>multiplied</em>, not added: how many people you meet, times the
-          chance a meeting passes it on, times how long you stay infectious.
-          That product is how many people the average infected person hands it
-          to.
+          One infection isn't an outcome, it's an opportunity. Every day someone is infectious they
+          meet people, and each meeting is a chance to make another infection — which then gets its
+          own days, and its own meetings. The question is never how bad one case is. It's whether
+          each case, on average, makes more than one more.
+        </p>
+
+        <figure class="loop">
+          <div class="loop-row loop-grow">
+            <span class="loop-label">Each case makes a bit <strong>more</strong> than one</span>
+            <span class="gen" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+            <span class="gen-arrow" aria-hidden="true">→</span>
+            <span class="gen" aria-hidden="true"
+              ><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i
+            ></span>
+            <span class="gen-arrow" aria-hidden="true">→</span>
+            <span class="gen" aria-hidden="true"
+              ><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i
+              ><i></i><i></i><i></i><i></i
+            ></span>
+          </div>
+          <div class="loop-row loop-shrink">
+            <span class="loop-label">Each case makes a bit <strong>less</strong> than one</span>
+            <span class="gen" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+            <span class="gen-arrow" aria-hidden="true">→</span>
+            <span class="gen" aria-hidden="true"><i></i><i></i></span>
+            <span class="gen-arrow" aria-hidden="true">→</span>
+            <span class="gen" aria-hidden="true"><i></i></span>
+          </div>
+          <figcaption>
+            Four cases, three rounds. Above the line the rounds compound; below it they run out.
+            Nothing in between — that is what a threshold is.
+          </figcaption>
+        </figure>
+
+        <p>
+          So the thing you moved isn't added to the outbreak, it's <em>multiplied</em> through it.
+          That's why almost the same setting gives an entirely different town. In this model the
+          line sits between five and six contacts a day: one meeting either side of it is the
+          difference between ten people infected and a hundred and forty.
         </p>
         <p>
-          Above one, every generation is bigger than the last and the outbreak
-          finds almost everyone. Below one, every generation is smaller and it
-          runs out of people before it runs out of luck. In this town the line
-          sits between five and six contacts a day. One meeting either side of
-          it is the difference between ten people and a hundred and forty —
-          which is why the honest advice was never "stop seeing anyone", and
-          never "carry on". It was: you are closer to the line than it feels.
+          Which is why the honest advice was never "stop seeing anyone", and never "carry on". It
+          was the thing that sounds too small to matter: you are closer to the line than it feels.
         </p>
         <p class="fine-print">
-          A toy model, not a forecast: 180 people, an eight-day illness, and one
-          seeded random number generator. Same seed every run, so the only thing
-          that ever changes is you.
+          A toy model, not a forecast: 180 people, an eight-day illness, and one seeded random
+          number generator. Same seed every run, so the only thing that ever changes is you.
         </p>
       </section>
     </main>
 
     <footer class="colophon">
-      <p>
-        Built for COMP4020 Assignment 1. Static, client-side, no data leaves
-        your browser.
-      </p>
+      <p>Built for COMP4020 Assignment 1. Static, client-side, no data leaves your browser.</p>
     </footer>
 
     <script type="module" src="./main.ts"></script>
