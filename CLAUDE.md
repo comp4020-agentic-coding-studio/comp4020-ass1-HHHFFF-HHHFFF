@@ -25,10 +25,11 @@ and see `spec/README.md` for how the checks in this repo relate to it.
   locally against a fresh `pnpm build` for the links check without waiting for
   CI.
 - To see what the page actually looks like rather than what you assume it looks
-  like, open it in a browser (the `agent-browser` CLI, documented on
-  [the course site](https://comp.anu.edu.au/courses/comp4020-agentic-coding-studio/topics/backpressure/#agent-browser-the-rendered-page-as-ground-truth),
-  works well for this). The rendered page is the truth; your mental model of it
-  isn't.
+  like, render it. There is no `agent-browser` CLI on this machine, so use the
+  headless Chrome recipe in
+  [Seeing the rendered page](#seeing-the-rendered-page-on-this-machine) — served
+  over HTTP, never `file://`. The rendered page is the truth; your mental model
+  of it isn't, and neither is a green test suite.
 - When a check fails, read its output before changing anything. Each check below
   names what it measures, and the failure message is the instruction: it tells
   you the file, the line, or the contract. Treat a red check as authoritative
@@ -122,27 +123,74 @@ The page is a narrative, not a dashboard, and it runs in beats:
 
 `predict → 01 Watch → 02 Change one thing → 03 Compare → 04 Why?`
 
-Rules that keep it that shape. Break them deliberately, not by accident:
+These seven rules are ones this project has already paid for. Break them
+deliberately, not by accident.
 
-- **One mechanic only.** Contact frequency is the sole variable. No vaccination,
-  masks, lockdowns, age groups, deaths, hospital capacity, variants, real COVID
-  data, or maps. Every one of those is a different explainer.
-- **The threshold is discovered, not announced.** The tendency gauge stays
-  hidden until the first run finishes; the visitor should run into the line
-  before reading about it. Same reason the prediction comes before the town.
-- **Phenomenon before mechanism.** `04 Why?` explains the feedback loop *after*
-  the visitor has seen it. It is not a place to grow an SIR theory section, and
-  the page never says R0, beta or gamma.
-- **The comparison must stay controlled.** `baseline` is the first completed run
-  and never moves; every later run is compared against it, and everything except
-  `contactsPerDay` comes from `BASE_CONFIG`. If a second input ever becomes
-  adjustable, the comparison stops meaning anything.
-- **Controls stay together.** The run button and the slider live in the same
-  control group. Splitting them across sections strands one off-screen at 390px.
-- **The prose is pinned to the model.** `spec/assignment-1.test.ts` asserts that
-  the copy's population, illness length and tipping point match what `sim.ts`
-  computes, and that the step numbers run 1..n with no gap. Retune the model and
-  the copy goes red, which is the point.
+**1. One mechanic, one comparison.** Contact frequency is the only variable. Do
+not add vaccination, masks, lockdowns, age groups, mortality, hospital capacity,
+variants, real COVID data, maps, or a second slider — each is a different
+explainer, and a second adjustable input destroys rule 3. When the piece needs
+to be better, deepen `predict → watch → change → compare → why`; don't widen it.
+
+**2. Phenomenon before mechanism.** The visitor sees it happen, then reads why.
+The tendency gauge stays hidden until the first run finishes, and the prediction
+comes before the town, so the threshold is discovered rather than announced.
+`04 Why?` explains the feedback loop afterwards; it is not a place to grow an
+SIR theory section, and the page never says R0, beta or gamma.
+
+**3. The comparison stays controlled.** `baseline` in `main.ts` is the **first**
+completed run and never moves; every later run is compared against it.
+Everything except `contactsPerDay` comes from `BASE_CONFIG`, seed included, so
+two runs differ in exactly one input. The whole claim of the piece is that only
+one thing changed.
+
+**4. Never move a simulation constant on its own.** Triggered by any edit to
+`BASE_CONFIG` — `seed`, `transmissionProb`, `infectiousDays`, `population`, the
+contact range. Every number in the prose is a claim about the model ("between
+five and six contacts a day", "ten people infected and fifty-one", "an
+eight-day illness", "180 people"), and `spec/assignment-1.test.ts` checks them
+against `simulate()` and `tippingPoint()`. So: change the constant, run
+`npx vitest run spec/assignment-1.test.ts`, and update the copy the failures
+name. The coupling is verifiable — retune `transmissionProb` away from `0.025`
+and three tests go red, all prose-to-model.
+
+Do **not** repair a failing copy assertion by editing the assertion. The page
+once claimed one contact either side of the line was the difference between ten
+people infected and a hundred and forty; 140 is the toll at *ten* contacts a
+day, five notches above the line, and the true one-step figure is 51. Nothing
+caught it because no test pinned those numbers yet. One does now.
+
+**5. Tune by sweep, not by eye.** Triggered by choosing or changing infection,
+contact or recovery behaviour. `sim.ts` is DOM-free precisely so it can run
+headlessly thousands of times: sweep seeds against contact rates and read the
+table. Seed `20260817` was picked from eight candidates because it gives a
+monotone response with a sharp cliff at five contacts a day. Don't choose
+parameters because the animation looks about right, and don't reach for a more
+dramatic outbreak — the number worth having is one a test can hold.
+
+**6. The reading sequence is a contract.** Triggered by adding, reordering or
+renaming narrative sections. A green suite says nothing about the order a reader
+meets things. Step markers must run `1..n` with no gap — asserted in
+`spec/assignment-1.test.ts` after a screenshot caught them reading 01, 03, 04 —
+and the `role="status"` prompt must describe the state the simulation is
+actually in. That prompt has gone stale twice: once still saying "now change
+just one thing" after the second run, once still saying "Run it" after the run
+had happened. Update the sequence invariant when the structure changes; don't
+delete it to make a change pass. The run button and slider also stay in one
+control group — split across sections, one of them strands off-screen at 390px.
+
+**7. Verify what renders, not just what compiles.** Triggered by any change to
+the core interaction, layout, section order or copy. `pnpm check` is necessary
+and not sufficient: every bug in rules 4 and 6 shipped past a green suite. Load
+the page in real Chrome at both marked viewports before accepting the change,
+and drive interactive states with `window.outbreakHarness.advanceDays(n)`
+instead of waiting on frames.
+
+Never reshape production code to satisfy a test environment: no downgrading
+module scripts, no inline scripts added for JSDOM's benefit, no second copy of
+the simulation for tests. The seam steps the same `Outbreak` instance the
+visitor is watching, which is the only reason a screenshot of it proves
+anything.
 
 `sim.ts` is deliberately DOM-free and viewport-independent (positions live in a
 unit square) so the outcome can't change when the window resizes, and so the
