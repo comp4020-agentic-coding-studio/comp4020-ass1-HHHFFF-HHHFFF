@@ -255,4 +255,18 @@ describe("the prose and the model agree", () => {
     expect(BASE_CONFIG.infectiousDays).toBe(8);
     expect(text).toContain("eight-day illness");
   });
+
+  it("quotes the outcomes either side of the line, and gets them the right way round", () => {
+    // The copy used to pair "one meeting either side of the line" with the
+    // toll from ten contacts a day — five notches above it — which overstated
+    // a single step by a factor of three. Spell both comparisons out.
+    const words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+    const spell = (n: number): string =>
+      n === 10 ? "ten" : n === 51 ? "fifty-one" : n === 141 ? "a hundred and forty-one" : words[n]!;
+
+    const line = tippingPoint();
+    expect(text).toContain(`${spell(simulate(line).everInfected)} people infected`);
+    expect(text).toContain(spell(simulate(line + 1).everInfected));
+    expect(text).toContain(spell(simulate(DEFAULT_CONTACTS).everInfected));
+  });
 });
