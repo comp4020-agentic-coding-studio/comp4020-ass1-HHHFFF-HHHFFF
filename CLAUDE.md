@@ -120,17 +120,38 @@ There's no `agent-browser` CLI installed here, so ground truth comes from
 headless Chrome directly:
 
 ```bash
+pnpm build && npx vite preview --port 4173 --strictPort &   # serve dist over http
 "/c/Program Files/Google/Chrome/Application/chrome.exe" --headless --disable-gpu \
-  --hide-scrollbars --window-size=1400,2200 \
+  --hide-scrollbars --window-size=1920,1080 --virtual-time-budget=6000 \
   --screenshot="C:\Users\H-F\AppData\Local\Temp\shot.png" \
-  "file:///E:/ANU/COMP4020/comp4020-ass1-HHHFFF-HHHFFF/dist/index.html"
+  "http://localhost:4173/"
 ```
 
-Two things to know. **Write the PNG to the temp dir, not the repo** --- Chrome
-gets "拒绝访问" writing into the working directory. And to see an interactive
-state, copy `dist/index.html` to the temp dir with a `<script type="module">`
-appended that clicks the control, then shoot that copy; module scripts run in
-order, so the injected click lands after the page's own script has wired up.
+Three things to know. **Write the PNG to the temp dir, not the repo** --- Chrome
+gets "拒绝访问" writing into the working directory. **Serve over http, not
+`file://`** --- Vite's build emits `<script type="module">`, and Chrome refuses
+to load a module from a `file://` origin (CORS, origin `null`), so a `file://`
+screenshot silently shows the page with no JavaScript at all: it looks like a
+working static page and is actually a corpse. And to see an interactive state,
+write a copy of `dist/index.html` back **into `dist/`** (so it's served from the
+same origin and its relative asset URLs resolve) with a `<script type="module">`
+appended that drives the page; module scripts run in order, so the injected code
+lands after the page's own script has wired up. Delete the copies afterwards.
+
+### Headless Chrome barely runs `requestAnimationFrame`
+
+`--virtual-time-budget=20000` advanced this project's animation by **one
+simulated day**: virtual time moves, but with no compositor headless produces
+roughly a frame per second of it. Anything driven by rAF is therefore invisible
+to a screenshot or a `--dump-dom` check --- the page sits on its first frame
+forever, which reads as "the interaction is broken" when it is fine.
+
+Adding `--run-all-compositor-stages-before-draw` barely helps. The fix that
+works is a **test seam**: expose a small hook on `window` that steps the same
+state the visitor sees, without waiting for frames (here,
+`window.outbreakHarness.advanceDays(n)` in `main.ts`), and have the injected
+script call it. That turns "I can't see the interactive states" into a real
+sensor, at the cost of about ten lines of shipped code.
 
 ### Chrome won't give you a 390px window --- use an iframe
 
@@ -143,19 +164,39 @@ page. It is an artefact of the crop, not a bug in the site, and "fixing" it
 means breaking a layout that was correct.
 
 Since 390×844 is one of the two marked viewports, measure it by rendering the
-page inside a 390px iframe instead of resizing the window. Inline the built
-HTML into `srcdoc` so the frame is same-origin and its document is readable,
-then read `clientWidth` / `scrollWidth` and every element's
-`getBoundingClientRect()` from the parent. Give it
+page inside a 390px iframe instead of resizing the window. Simplest version:
+write a `_frame.html` into `dist/` whose iframe `src` is the page, so both are
+served from the same origin and the frame's document is readable; then read
+`clientWidth` / `scrollWidth` and every element's `getBoundingClientRect()` from
+the parent and print them into the DOM for `--dump-dom` to pick up. Give it
 `--virtual-time-budget=8000` so the measurement runs before the screenshot.
 A real result reads `clientWidth=390 scrollWidth=390`.
 
-### Don't trust JSDOM's `getComputedStyle` for whether something is visible
+Pass `--hide-scrollbars` on the measuring run too. Without it the iframe's own
+15px scrollbar eats into the frame and you get `clientWidth=375`, which reads as
+a layout bug that isn't there.
 
-It doesn't model the user-agent/author cascade. It reported `display: none` for
-a reply form that was plainly visible in Chrome, so the test passed while the
-page was wrong. If a check is about what renders, either assert the stylesheet
-contract in text or take a screenshot.
+That same loop is the cheapest place to check hit targets: filter for
+`button, input, a` with a `getBoundingClientRect().height < 24` and it names
+them. It caught nav links at 22px and a range input at 16px here.
+
+### Don't trust JSDOM for anything about rendering or behaviour
+
+It doesn't model the user-agent/author cascade: `getComputedStyle` reported
+`display: none` for a reply form that was plainly visible in Chrome, so the test
+passed while the page was wrong.
+
+Worse, **JSDOM does not execute `<script type="module">`** (probed against
+jsdom 29 on 2026-08-09), and Vite's build emits exactly one script, a module.
+It also has no `requestAnimationFrame` and `canvas.getContext("2d")` returns
+`null`. So any JSDOM test shaped like "click the control and assert the DOM
+changed" fails for reasons that have nothing to do with the page --- and the
+honest fix is not to contort the site until the blind sensor is happy.
+
+What works: keep the logic in a **DOM-free module** (`sim.ts` here) and test the
+behaviour there directly, assert the **markup contract** in JSDOM, and check
+what actually renders in real Chrome at both marked viewports. Three sensors,
+each pointed at something it can actually see.
 
 ### `hidden` loses to any author `display`
 

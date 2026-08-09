@@ -3,22 +3,224 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>COMP4020 prototype</title>
+    <title>
+      One small change — how often you see people decides the outbreak
+    </title>
+    <meta
+      name="description"
+      content="An interactive explainer: same town, same virus, same first patient. Move one slider and watch an epidemic become a footnote."
+    />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <header>
-      <nav aria-label="Primary">
-        <a href="./">Home</a>
+    <a class="skip-link" href="#explore">Skip to the simulation</a>
+
+    <header class="masthead">
+      <p class="wordmark">An interactive explainer</p>
+      <nav aria-label="Sections">
+        <a href="#explore">The town</a>
+        <a href="#point">The point</a>
       </nav>
     </header>
+
     <main>
-      <h1>COMP4020 prototype</h1>
-      <p data-testid="intro">
-        Replace this with your prototype. This week's brief is on the course website;
-        <code>spec/README.md</code> explains how the checks in this repo relate to it.
-      </p>
+      <section class="hero">
+        <h1>One small change</h1>
+        <p class="dek">
+          A town of 180 people. One of them is infected. The virus never
+          changes, the town never changes, and the first patient is always the
+          same person. The only thing you get to move is
+          <em>how many people each person meets in a day</em> — and that alone
+          decides whether this is a footnote or an epidemic.
+        </p>
+      </section>
+
+      <section id="explore" class="stage" aria-labelledby="stage-heading">
+        <h2 id="stage-heading" class="visually-hidden">The simulation</h2>
+
+        <div class="stage-grid">
+          <figure class="field">
+            <canvas
+              id="field"
+              role="img"
+              aria-label="A town of 180 people, all healthy except one."
+              data-testid="field"
+            ></canvas>
+            <figcaption class="legend">
+              <span class="key key-susceptible">Healthy</span>
+              <span class="key key-infected">Infected</span>
+              <span class="key key-recovered">Recovered</span>
+            </figcaption>
+          </figure>
+
+          <div class="panel">
+            <dl class="readouts">
+              <div class="readout">
+                <dt>Day</dt>
+                <dd data-testid="readout-day">0</dd>
+              </div>
+              <div class="readout readout-infected">
+                <dt>Infected now</dt>
+                <dd data-testid="readout-infected">1</dd>
+              </div>
+              <div class="readout">
+                <dt>Worst day</dt>
+                <dd data-testid="readout-peak">1</dd>
+              </div>
+              <div class="readout">
+                <dt>Ever infected</dt>
+                <dd data-testid="readout-ever">1</dd>
+              </div>
+            </dl>
+
+            <figure class="chart-wrap">
+              <svg
+                id="chart"
+                class="chart"
+                viewBox="0 0 600 220"
+                preserveAspectRatio="none"
+                role="img"
+                aria-label="Infected people over time. The outbreak has not started."
+                data-testid="chart"
+              >
+                <line class="axis" x1="0" y1="200" x2="600" y2="200" />
+                <polyline
+                  class="ghost-curve"
+                  data-testid="ghost-curve"
+                  points=""
+                  hidden
+                />
+                <polygon class="curve-fill" points="" />
+                <polyline class="curve" data-testid="curve" points="" />
+                <text
+                  class="chart-empty"
+                  data-testid="chart-empty"
+                  x="300"
+                  y="110"
+                >
+                  the outbreak curve appears here
+                </text>
+              </svg>
+              <figcaption class="chart-caption">
+                <span data-testid="chart-y">Infected at once</span>
+                <span data-testid="chart-x">Days</span>
+              </figcaption>
+            </figure>
+
+            <div class="controls">
+              <button
+                id="run"
+                class="run"
+                type="button"
+                data-testid="interactive-control"
+              >
+                Start the outbreak
+              </button>
+
+              <div class="slider">
+                <label for="contacts">How social is this town?</label>
+                <input
+                  id="contacts"
+                  type="range"
+                  min="1"
+                  max="16"
+                  step="1"
+                  value="10"
+                  data-testid="contacts"
+                />
+                <output for="contacts" data-testid="contacts-value"
+                  >10 contacts a day, each person</output
+                >
+              </div>
+
+              <button
+                id="reset"
+                class="reset"
+                type="button"
+                data-testid="reset"
+              >
+                Start over
+              </button>
+            </div>
+
+            <div class="compare" data-testid="comparison" hidden>
+              <h3 class="compare-title" data-testid="comparison-title">
+                Same town, one change
+              </h3>
+              <table class="compare-table">
+                <thead>
+                  <tr>
+                    <th scope="col">
+                      <span class="visually-hidden">Measure</span>
+                    </th>
+                    <th scope="col" data-testid="compare-head-before">
+                      Before
+                    </th>
+                    <th scope="col" data-testid="compare-head-after">After</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Ever infected</th>
+                    <td data-testid="compare-ever-before">—</td>
+                    <td data-testid="compare-ever-after">—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Worst day</th>
+                    <td data-testid="compare-peak-before">—</td>
+                    <td data-testid="compare-peak-after">—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Outbreak lasted</th>
+                    <td data-testid="compare-days-before">—</td>
+                    <td data-testid="compare-days-after">—</td>
+                  </tr>
+                </tbody>
+              </table>
+              <p class="compare-note" data-testid="comparison-note"></p>
+            </div>
+          </div>
+        </div>
+
+        <p class="prompt" role="status" data-testid="prompt">
+          One person is infected. Everyone else is healthy. Press start and
+          watch what ten contacts a day does.
+        </p>
+      </section>
+
+      <section id="point" class="closing">
+        <h2>The point</h2>
+        <p>
+          Nothing about the virus moved. What moved was a number that gets
+          <em>multiplied</em>, not added: how many people you meet, times the
+          chance a meeting passes it on, times how long you stay infectious.
+          That product is how many people the average infected person hands it
+          to.
+        </p>
+        <p>
+          Above one, every generation is bigger than the last and the outbreak
+          finds almost everyone. Below one, every generation is smaller and it
+          runs out of people before it runs out of luck. In this town the line
+          sits between five and six contacts a day. One meeting either side of
+          it is the difference between ten people and a hundred and forty —
+          which is why the honest advice was never "stop seeing anyone", and
+          never "carry on". It was: you are closer to the line than it feels.
+        </p>
+        <p class="fine-print">
+          A toy model, not a forecast: 180 people, an eight-day illness, and one
+          seeded random number generator. Same seed every run, so the only thing
+          that ever changes is you.
+        </p>
+      </section>
     </main>
+
+    <footer class="colophon">
+      <p>
+        Built for COMP4020 Assignment 1. Static, client-side, no data leaves
+        your browser.
+      </p>
+    </footer>
+
     <script type="module" src="./main.ts"></script>
   </body>
 </html>
