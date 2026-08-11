@@ -30,18 +30,7 @@ tests failed immediately, all of them prose-to-model couplings. The explanatory
 copy can no longer drift from the simulation without the build going red.
 [`a71d57b...e2e4125`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HHHFFF-HHHFFF/compare/a71d57b...e2e4125)
 
-### 2. Choosing the tipping point by sweep, not by eye
-
-The piece only works if the threshold is sharp and findable. The easy path was
-to pick plausible transmission numbers and eyeball whether the outbreak looked
-right. Because the simulation was already DOM-free, I swept it instead — eight
-seeds against every contact rate — and read the table rather than the animation.
-Seed 20260817 gave a monotone response with a cliff at five: 10 people infected
-at five contacts a day against 51 at six. That cliff is now a spec assertion, so
-the number in the copy and the number the model produces stay the same number.
-[`e2e4125`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HHHFFF-HHHFFF/commit/e2e4125)
-
-### 3. The page I could not see
+### 2. The page I could not see
 
 Screenshots showed the outbreak frozen on day 0. Twenty seconds of virtual time
 in headless Chrome advanced it by one simulated day, because headless produces
@@ -55,7 +44,7 @@ day 0, mid-outbreak and completed states, and the readouts on screen matched the
 headless sweep exactly — 141 infected, peak 40, over 51 days.
 [`e2e4125`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HHHFFF-HHHFFF/commit/e2e4125)
 
-### 4. A bug 36 green tests could not see
+### 3. A bug 36 green tests could not see
 
 Rebuilding the page as a narrative, every test passed — and a screenshot showed
 the steps reading 01, 03, 04, with a hole where 02 should be, because "change
@@ -66,3 +55,20 @@ actually meets. So the fix ships with an invariant asserting the step numbers
 run 1..n with no gap. The same screenshot pass caught a prompt still saying "Run
 it" after the run had already happened.
 [`e2e4125...75dc1b6`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HHHFFF-HHHFFF/compare/e2e4125...75dc1b6)
+
+### 4. Fixing the symptom, twice, before the cause
+
+At 1920 the page's text ran at six different widths, so I capped it to three
+named tokens. That fixed the ragged edge and was still the wrong diagnosis:
+prose now ended at 936px inside a 1512px shell, so 45% of every text section
+was empty — the page looked unfinished for a reason no width token could fix.
+The real cause was that nothing sat beside the text, so each section's figure
+moved up next to it — the three choices beside the prediction, the live prompt
+beside "change one thing", the generation figures beside the argument in
+`04 Why?` — with DOM order kept copy-then-figure so phone and screen-reader
+order don't move. Verified by re-measuring the 390px frame
+(`clientWidth=390 scrollWidth=390`, no sub-24px targets) rather than trusting
+the first diagnosis again. Nothing pinned the split itself, so a later edit
+could drop it silently; a spec assertion now locks the `>=56rem` CSS rule and
+the copy-before-companion order.
+[`84276f6...ad1caf4`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HHHFFF-HHHFFF/compare/84276f6...ad1caf4)
