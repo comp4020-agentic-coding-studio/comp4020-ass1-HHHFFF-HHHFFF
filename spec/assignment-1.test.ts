@@ -238,6 +238,41 @@ describe("core interaction: using it changes the outcome", () => {
   });
 });
 
+describe("wide layout: text and the thing it discusses split into two columns above 56rem", () => {
+  // The first attempt at this (three prose widths instead of six) fixed the
+  // ragged right edge but left the diagnosis wrong: at 1920 the prose column
+  // still ended at 936px inside a 1512px shell, so 45% of every text section
+  // was empty. The actual fix put copy and companion side by side; this locks
+  // the CSS contract in place so a later change can't quietly lose the split.
+  it("defines the split as a CSS rule, not a JS one, so it holds without a re-render", () => {
+    const css = builtCss().replace(/\s+/g, "");
+    expect(css, "the >=56rem two-column rule for .act-split is missing").toContain(
+      ".act-split{grid-template-columns:minmax(0,var(--measure))minmax(0,1fr)",
+    );
+  });
+
+  it("gives every act-split section exactly one copy block and one companion, copy first", () => {
+    const sections = Array.from(doc.querySelectorAll(".act-split"));
+    expect(sections.length, "predict, change one thing, and why all split above 56rem").toBe(3);
+
+    for (const section of sections) {
+      // `why` also carries a closing `.why-callout`, which the >=56rem rule
+      // spans across both columns rather than treating as a third one.
+      const children = Array.from(section.children);
+      expect(children.length, `#${section.id} needs at least two things to split into columns`)
+        .toBeGreaterThanOrEqual(2);
+      expect(
+        children[0]!.classList.contains("act-copy"),
+        `#${section.id}: reading order must stay copy-then-figure for phone and screen readers`,
+      ).toBe(true);
+      expect(
+        children[1]!.classList.contains("act-copy"),
+        `#${section.id}: the second column is the companion, not more copy`,
+      ).toBe(false);
+    }
+  });
+});
+
 describe("the prose and the model agree", () => {
   const text = doc.body.textContent!.replace(/\s+/g, " ").toLowerCase();
 
