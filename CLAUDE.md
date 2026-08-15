@@ -90,11 +90,19 @@ running counts as not green, so ship with time for CI to finish.
   blocks any commit containing something shaped like an API key --- by the time
   CI sees a key it's already pushed, so the hook is the sensor that matters.
 
-Nothing here measures **accessibility** or **performance** --- wiring those
-sensors (`axe-core`, Lighthouse, or whatever you choose) is your work, and later
-in the course the spec will ask you to show how you tested both. When you do,
-read a green performance result honestly: it's a lab estimate from one run on a
-CI machine, not proof the site is fast for real users.
+Nothing here measures **performance** --- wiring that sensor (Lighthouse, or
+whatever you choose) is your work, and later in the course the spec will ask you
+to show how you tested it. When you do, read a green performance result
+honestly: it's a lab estimate from one run on a CI machine, not proof the site
+is fast for real users.
+
+**Accessibility** is half-wired, and the split is deliberate. Contrast is
+arithmetic, so `spec/assignment-1.test.ts` computes it from the built
+stylesheet: no browser, no false confidence, and it runs in CI. Everything else
+axe checks needs a real render, so it is a manual recipe (below) rather than a
+CI step --- axe under JSDOM would skip contrast entirely and guess at
+visibility, which is the blind-sensor trap this project already paid for once.
+Run the recipe after any change to markup, colour or the revealed panels.
 
 ## The stack is swappable
 
@@ -123,7 +131,7 @@ The page is a narrative, not a dashboard, and it runs in beats:
 
 `predict → 01 Watch → 02 Change one thing → 03 Compare → 04 Why?`
 
-These seven rules are ones this project has already paid for. Break them
+These eight rules are ones this project has already paid for. Break them
 deliberately, not by accident.
 
 **1. One mechanic, one comparison.** Contact frequency is the only variable. Do
@@ -216,6 +224,35 @@ anything.
 unit square) so the outcome can't change when the window resizes, and so the
 behaviour can be tested without a browser.
 
+**8. A state the visitor can reach has to survive being reached badly.**
+Triggered by any change to markup, colour, or the panels the page reveals. The
+marked criteria reward a page that "holds up under use it wasn't designed for
+--- the keyboard, a resize mid-interaction, a slow connection", so those are
+three separate checks, not a vibe.
+
+Everything the page reveals, it reveals by dropping `hidden`, and **an element
+that was hidden when its content changed is not reliably announced**. So the
+outcome of a run --- the whole payoff --- went to screen readers in complete
+silence while every markup assertion passed. The fix is the always-present
+`role="status"` region in `index.html` (`data-testid="announcer"`), written in
+`finish()` *after* `showCompare`, so it speaks the note that is actually on
+screen. Reveal a new panel and it needs to reach that region; don't scatter
+`aria-live` onto the panels themselves.
+
+A range input announces a bare `10` --- no unit, no meaning. `aria-valuetext`
+carries the unit and, once there's a baseline, the tendency, so arrowing across
+the line is audible. It drops the tendency while a run is in flight, for the
+same reason the gauge does (rule 6).
+
+Colour comes in two families and mixing them breaks something either way. The
+plain tokens (`--infected`, `--recovered`, `--susceptible`) are the colours of
+*things* and are duplicated in `COLOURS` in `main.ts`, so the legend swatch
+matches the dot. The `-ink` tokens are the same hues darkened to clear 4.5:1,
+for small text and for surfaces that carry text. Measured, not eyeballed: the
+step markers were 4.17, the legend labels 3.75--3.79, and the run button's
+nudge state 4.47 against a 4.5 floor. The spec asserts both the ratios and the
+separation of the two families, so a retune fails a check rather than a user.
+
 ## Keeping PROCESS.md current
 
 `PROCESS.md` is maintained as the work goes, not written at the end. After any
@@ -257,6 +294,47 @@ write a copy of `dist/index.html` back **into `dist/`** (so it's served from the
 same origin and its relative asset URLs resolve) with a `<script type="module">`
 appended that drives the page; module scripts run in order, so the injected code
 lands after the page's own script has wired up. Delete the copies afterwards.
+
+**`vite build` empties `dist/` first.** Every harness page you write in there
+is gone after the next build, so the order is always build → write the harness
+pages → measure. A stale `_something.html` left behind will 404 on its
+now-deleted `_something.js` and produce an empty result that reads exactly like
+a broken page. Delete them when you're done; they are untracked but they end up
+in the deployed artefact if a build doesn't clear them first.
+
+### Running axe against the real page
+
+Contrast lives in the spec suite, but the rest of axe needs a render. Build,
+then write a copy of `dist/index.html` with two scripts appended before
+`</body>` --- `axe.min.js` from a CDN as a classic script, then a module that
+drives the page through `window.outbreakHarness` and calls `axe.run(document)`.
+Drive it first: axe only sees the panels that are visible, so an undriven page
+scores well by having nothing on it. Print the result into the DOM and read it
+with `--dump-dom --virtual-time-budget=20000` (the CDN fetch needs the budget).
+
+Two results are expected noise. The injected `<pre>` trips `region` because it
+sits outside any landmark, and the four `→` in the loop figure land in
+`incomplete` as "content contains only non-text characters" --- they are
+`aria-hidden` decoration. Anything else is real. This is how the run button's
+nudge state was caught at 4.47:1, which the spec's contrast table had missed
+because that table only covered ink-on-paper, not white-on-fill.
+
+### The `<noscript>` path cannot be screenshotted here
+
+`--disable-javascript` is **silently ignored** by this Chrome build --- the page
+still ran its module (checked by dumping the DOM and finding the
+`aria-valuetext` that only JavaScript sets). And
+`--blink-settings=scriptEnabled=false`, which does control whether `<noscript>`
+renders, makes the screenshot pipeline produce no file at all.
+
+So don't try to prove the `<noscript>` branch by screenshot. Verify the two
+halves separately: that the element is in the built markup (`spec` sees it),
+and that its styling is right by rendering a copy of `dist/index.html` with the
+`<noscript>` wrapper tags stripped out. The branch itself is guaranteed by the
+HTML parser, not by anything a screenshot here could show. (Note that
+`--dump-dom` prints `noscript` contents unescaped when scripting is *enabled*,
+because it serialises as a raw-text element --- so seeing real tags inside it
+proves nothing either way.)
 
 ### Headless Chrome barely runs `requestAnimationFrame`
 
