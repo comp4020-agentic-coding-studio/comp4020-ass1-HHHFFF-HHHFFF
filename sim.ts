@@ -112,6 +112,27 @@ export function spreadTendency(
   return onward > 1 ? "growing" : "shrinking";
 }
 
+/**
+ * True when a pair of runs points the opposite way to the argument the page
+ * makes: more contacts a day, a smaller outbreak, or the reverse.
+ *
+ * The slider is not monotone and cannot be. The seed is fixed, but changing the
+ * contact rate changes where the luck falls, so a handful of adjacent rates
+ * land the wrong way round — eight contacts a day infects 115 here and nine
+ * infects 85. Five of the 120 ordered pairs do this. The page has to be able to
+ * see them, because narrating "fewer chances" over a run that had *more*
+ * contacts and fewer infections is the page arguing against itself.
+ *
+ * What survives the noise is separation across the threshold, not smoothness
+ * along the slider; `spec/assignment-1.test.ts` holds both properties.
+ */
+export function wrongWayRound(base: RunSummary, mod: RunSummary): boolean {
+  const step = mod.contactsPerDay - base.contactsPerDay;
+  const toll = mod.everInfected - base.everInfected;
+  if (step === 0 || toll === 0) return false;
+  return Math.sign(step) !== Math.sign(toll);
+}
+
 export class Outbreak {
   readonly config: OutbreakConfig;
   readonly people: Person[];

@@ -3,6 +3,7 @@ import {
   makeOutbreak,
   reproductionNumber,
   spreadTendency,
+  wrongWayRound,
   type Outbreak,
   type Person,
   type RunSummary,
@@ -122,6 +123,11 @@ function readContacts(): number {
 
 function stillMode(): boolean {
   return stillPlease?.matches === true;
+}
+
+/** An outbreak is on screen and unfinished. Paused counts: it is still mid-run. */
+function inFlight(): boolean {
+  return phase === "running" || phase === "paused";
 }
 
 function snapshotPositions(people: Person[]): Array<{ x: number; y: number }> {
@@ -459,15 +465,27 @@ function updateTendency(c: number): void {
     setHidden(ui.thresholdNotice, true);
     return;
   }
-  const now = spreadTendency(c);
-  const onward = reproductionNumber(c);
+  // `startRun` reads the slider once, at the start, so moving it mid-run does
+  // not touch the outbreak on screen. While one is in flight the gauge has to
+  // describe the rate that outbreak is actually running at, and say which rate
+  // that is. Pause at twelve a day and drag to three, and this used to announce
+  // "Shrinking — each infected person passes it to about 0.6 others" over a
+  // twelve-a-day outbreak sitting paused mid-screen; resuming then infected 145.
+  const live = inFlight();
+  const rate = live ? sim.config.contactsPerDay : c;
+  const now = spreadTendency(rate);
+  const onward = reproductionNumber(rate);
   ui.tendencyPill.textContent = TENDENCY_LABEL[now];
   ui.tendencyPill.dataset.tendency = now;
-  ui.tendencyDetail.textContent = `each infected person passes it to about ${onward.toFixed(1)} others`;
+  ui.tendencyDetail.textContent = live
+    ? `this run is at ${rate} a day — each infected person passes it to about ${onward.toFixed(1)} others`
+    : `each infected person passes it to about ${onward.toFixed(1)} others`;
   setHidden(ui.tendency, false);
 
+  // "You crossed the threshold" is about a change you are about to run, so it
+  // has nothing to say while an outbreak is already in flight.
   const before = spreadTendency(baseline.contactsPerDay);
-  if (now === before || phase === "running") {
+  if (now === before || live) {
     setHidden(ui.thresholdNotice, true);
     return;
   }
@@ -561,8 +579,12 @@ function showCompare(base: RunSummary, mod: RunSummary): void {
   ui.daysBefore.textContent = `${base.lastDay} days`;
   ui.daysAfter.textContent = `${mod.lastDay} days`;
 
-  setDelta(ui.peakDelta, mod.peakInfected - base.peakInfected);
-  setDelta(ui.everDelta, mod.everInfected - base.everInfected);
+  // Same reasoning as the duration column below: when the pair runs against the
+  // argument, a green "−30" would be the page claiming that meeting more people
+  // helped. It doesn't know that — this run is one draw, and the note says so.
+  const upended = wrongWayRound(base, mod);
+  setDelta(ui.peakDelta, mod.peakInfected - base.peakInfected, upended);
+  setDelta(ui.everDelta, mod.everInfected - base.everInfected, upended);
   // Duration is left uncoloured on purpose: fewer days is good when the
   // outbreak was stopped and bad when it was merely flattened, so green here
   // would be the page asserting something it doesn't know.
@@ -586,6 +608,13 @@ function noteFor(base: RunSummary, mod: RunSummary): string {
   const size = Math.abs(step);
   const contacts = `${size} ${size === 1 ? "contact" : "contacts"} a day`;
   const spared = base.everInfected - mod.everInfected;
+
+  // Say it plainly when this particular pair runs against the argument, rather
+  // than reaching for one of the explanations below — all of which assume the
+  // outbreak moved the way the contact rate did.
+  if (wrongWayRound(base, mod)) {
+    return `${contacts} ${step > 0 ? "more" : "fewer"}, and this time the outbreak came out ${step > 0 ? "smaller" : "larger"}. The seed is fixed, but changing the rate changes where the luck falls, so two neighbouring settings can land the wrong way round. It's the span of the slider that carries the argument, not one step of it — move further from the baseline and it shows.`;
+  }
 
   if (mod.everInfected <= base.everInfected * 0.3) {
     return `${contacts} ${step < 0 ? "fewer" : "more"} didn't slow this outbreak down. It stopped it: ${spared} people who caught it in the baseline never caught it here, because the chain broke before it found the town.`;
