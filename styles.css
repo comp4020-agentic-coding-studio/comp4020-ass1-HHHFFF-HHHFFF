@@ -997,6 +997,21 @@ button {
   color: var(--ink);
 }
 
+/* The closing claim, ruled off from the beats above it. Everything before the
+   rule is something the simulation demonstrates; this is the author speaking
+   past the model, and the change in register is the honest signal for that. */
+.closing .why-verdict {
+  max-width: 46ch;
+  padding-top: 1.25rem;
+  margin: 1.5rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2.1vw, 1.4rem);
+  line-height: 1.45;
+  color: var(--ink);
+  border-top: 1px solid var(--rule);
+  text-wrap: pretty;
+}
+
 .fine-print {
   font-size: 0.85rem !important;
   color: var(--ink-soft);

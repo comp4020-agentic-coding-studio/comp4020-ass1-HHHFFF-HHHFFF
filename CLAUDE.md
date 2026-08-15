@@ -140,6 +140,21 @@ variants, real COVID data, maps, or a second slider — each is a different
 explainer, and a second adjustable input destroys rule 3. When the piece needs
 to be better, deepen `predict → watch → change → compare → why`; don't widen it.
 
+**The closing line reaches past the model, and says so.** `.why-verdict` is the
+one place the page speaks about the world rather than about the town. The first
+draft of it claimed isolation was the *best* way to control an outbreak, and
+that is not a claim this model can make: one lever, nothing to weigh it
+against, and no treatment in it anywhere — the infectious period is eight days
+whatever happens. It now says isolation is worth taking seriously, names that
+limit in its own middle clause, and rests the rest on what the simulation does
+show. That version is supportable; the superlative was not.
+
+It is ruled off from the beats above it so the change in register is visible.
+Two ways to break it: soften it into a superlative again, or treat it as a
+foothold and grow a second slider, a treatment parameter, or a comparison of
+interventions. Each of those is the different explainer rule 1 exists to
+refuse.
+
 **2. Phenomenon before mechanism.** The visitor sees it happen, then reads why.
 The tendency gauge stays hidden until the first run finishes, and the prediction
 comes before the town, so the threshold is discovered rather than announced.
