@@ -164,6 +164,22 @@ elements. So: change the constant, run
 name. The coupling is verifiable — retune `transmissionProb` away from `0.025`
 and three tests go red, all prose-to-model.
 
+A claim doesn't have to be a number to be a claim. The page told visitors that
+between two runs "the only difference you can see is the one you made" and that
+they shared the "same run of luck". Neither is true: the contact rate decides
+how many draws `meet()` takes each tick, so two rates walk the same seeded
+stream at different speeds and meet their luck in different places. A reader
+compared ten contacts against eleven, watched both the peak and the total
+*fall*, and concluded the page was contradicting itself — which it was. Only
+one **input** is pinned across runs; the realisation isn't, and can't be. Say
+that, and don't let the prose quietly promise determinism the model doesn't
+have.
+
+Rewording is not fixing. The first repair of that sentence became "the only
+thing that differs between two runs" — the same false claim in new words, and
+it passed the new assertion because the assertion only knew the old wording.
+Check the replacement is *true*, not merely different.
+
 Do **not** repair a failing copy assertion by editing the assertion. The page
 once claimed one contact either side of the line was the difference between ten
 people infected and a hundred and forty; 140 is the toll at *ten* contacts a
