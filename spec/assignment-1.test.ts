@@ -319,6 +319,97 @@ describe("wide layout: text and the thing it discusses split into two columns ab
   });
 });
 
+describe("contrast: the small text clears WCAG AA", () => {
+  // Nothing in this repo measured accessibility, and reading hex codes off a
+  // screenshot won't: the red step markers looked fine and came out at 4.17,
+  // the legend labels at 3.75. This is arithmetic on the built stylesheet, so
+  // it runs without a browser and can't be fooled by how the page looks.
+  //
+  // It reads the tokens out of the CSS rather than repeating them, so renaming
+  // or retuning one fails here instead of drifting quietly.
+  const css = builtCss();
+
+  function token(name: string): string {
+    const found = new RegExp(`${name}:\\s*(#[0-9a-f]{6})`, "i").exec(css);
+    expect(found, `--${name} is gone from the built CSS; this test is now blind`).toBeTruthy();
+    return found![1]!;
+  }
+
+  function luminance(hex: string): number {
+    const channels = [1, 3, 5]
+      .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * channels[0]! + 0.7152 * channels[1]! + 0.0722 * channels[2]!;
+  }
+
+  function ratio(a: string, b: string): number {
+    const [x, y] = [luminance(a), luminance(b)];
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+  }
+
+  const paper = token("--paper");
+  const raised = token("--paper-raised");
+
+  it("gives every ink token 4.5:1 on both backgrounds", () => {
+    // 4.5 is the AA floor for text under 18.66px bold / 24px, which is all of
+    // it: step markers at 0.72rem, legend keys at 0.8rem, deltas at 0.9rem.
+    for (const name of ["--ink", "--ink-soft", "--infected-ink", "--recovered-ink", "--baseline-ink", "--susceptible-ink"]) {
+      const value = token(name);
+      for (const [label, bg] of [["paper", paper], ["paper-raised", raised]] as const) {
+        expect(ratio(value, bg), `${name} (${value}) on ${label} is too faint for small text`)
+          .toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  it("keeps white button labels legible on their filled surfaces", () => {
+    // The table above only covered ink-on-paper, and missed this: an axe run
+    // against the driven page found the run button's nudge state at 4.47,
+    // white on the dot red. Surfaces that carry text need the ink token too.
+    for (const surface of ["--ink", "--infected-ink"]) {
+      expect(
+        ratio(token("--paper-raised"), token(surface)),
+        `white button text on ${surface} is too faint`,
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+    // The minifier drops the attribute-value quotes, so match either form.
+    expect(css.replace(/\s+/g, ""), "the nudge button must fill with the ink red").toMatch(
+      /data-nudge="?true"?\]\{background:var\(--infected-ink\)/,
+    );
+  });
+
+  it("keeps the dot colours out of small text, and the ink out of the dots", () => {
+    // The legend swatch has to stay the colour of the dot it labels while the
+    // label beside it goes dark enough to read. Collapsing the two families
+    // back into one breaks whichever half you didn't think about.
+    // The minifier collapses `::before` to `:before`, so match either.
+    const compact = css.replace(/\s+/g, "");
+    for (const [key, dot] of [
+      ["key-infected", "--infected"],
+      ["key-recovered", "--recovered"],
+      ["key-susceptible", "--susceptible"],
+    ]) {
+      expect(compact, `.${key}::before must paint the real ${dot} colour`).toMatch(
+        new RegExp(`\\.${key}::?before\\{background:var\\(${dot}\\)`),
+      );
+    }
+    expect(compact, ".step is small text and must use an ink token").toContain(
+      "color:var(--infected-ink)",
+    );
+  });
+
+  it("still paints the canvas dots in the unmodified colours", () => {
+    // main.ts hardcodes these, so a retune of the CSS token would silently
+    // desync the legend from the town. Assert they are still the same three.
+    const source = readFileSync(resolve("main.ts"), "utf8");
+    for (const name of ["--susceptible", "--infected", "--recovered"]) {
+      expect(source, `${name} no longer matches the colour the canvas draws`).toContain(
+        token(name),
+      );
+    }
+  });
+});
+
 describe("the prose and the model agree", () => {
   const text = doc.body.textContent!.replace(/\s+/g, " ").toLowerCase();
 

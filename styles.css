@@ -4,10 +4,25 @@
   --ink: #16181d;
   --ink-soft: #575c66;
   --rule: #e0dad0;
+
+  /* Two families, and the difference matters. The plain tokens are the colours
+     of things — the dots the canvas draws (`COLOURS` in main.ts hardcodes the
+     same three), the curve strokes, the large display figures. The `-ink`
+     tokens are the same hues darkened until they clear 4.5:1 — use them
+     anywhere the colour has to be legible rather than merely identifiable:
+     small text, and surfaces carrying text. Measured, not eyeballed: at
+     0.72rem the original red came out at 4.17, the legend labels at 3.75-3.79,
+     and the nudge button's white label at 4.47.
+     Never set small text to a plain token, and never set a swatch or a stroke
+     to an `-ink` one — the legend would stop matching the dots it labels. */
   --susceptible: #b4bcc8;
   --infected: #d6402c;
   --recovered: #3f8f80;
   --baseline: #8a9099;
+  --infected-ink: #ca3b27;
+  --recovered-ink: #367a6e;
+  --baseline-ink: #696f79;
+  --susceptible-ink: #6a6f7b;
   --focus: #1d4ed8;
 
   /* Three widths, and only three. Reading text sits at --measure so no line
@@ -147,6 +162,33 @@ h1 {
   color: var(--ink);
 }
 
+/* Full-bleed tint, but the sentence inside keeps the reading measure the rest
+   of the page uses — unconstrained it ran about 150 characters at 1920. */
+.noscript-band {
+  background: rgb(214 64 44 / 8%);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+
+.noscript-note {
+  max-width: var(--shell);
+  padding: 0.9rem clamp(1rem, 4vw, 3rem);
+  margin: 0 auto;
+  font-family: var(--font-display);
+}
+
+.noscript-note em {
+  font-style: italic;
+}
+
+@media (width >= 56rem) {
+  .noscript-note {
+    max-width: calc(var(--measure) + 6rem);
+    margin: 0 auto 0 max(0px, calc(50vw - var(--shell) / 2));
+    padding-left: clamp(1rem, 4vw, 3rem);
+  }
+}
+
 /* Acts -------------------------------------------------------------------- */
 
 .act {
@@ -165,7 +207,7 @@ h1 {
   margin: 0 0 0.5rem;
   font-size: 0.72rem;
   font-weight: 700;
-  color: var(--infected);
+  color: var(--infected-ink);
   text-transform: uppercase;
   letter-spacing: 0.14em;
 }
@@ -272,8 +314,9 @@ h1 {
   border-radius: 50%;
 }
 
+/* Label reads as ink, swatch stays the colour of the dot it stands for. */
 .key-susceptible {
-  color: #7d838f;
+  color: var(--susceptible-ink);
 }
 
 .key-susceptible::before {
@@ -281,11 +324,19 @@ h1 {
 }
 
 .key-infected {
-  color: var(--infected);
+  color: var(--infected-ink);
+}
+
+.key-infected::before {
+  background: var(--infected);
 }
 
 .key-recovered {
-  color: var(--recovered);
+  color: var(--recovered-ink);
+}
+
+.key-recovered::before {
+  background: var(--recovered);
 }
 
 .panel {
@@ -330,7 +381,7 @@ h1 {
 }
 
 .readout-infected dd {
-  color: var(--infected);
+  color: var(--infected-ink);
 }
 
 /* Charts ------------------------------------------------------------------ */
@@ -389,7 +440,7 @@ h1 {
 .chart-empty {
   font-family: var(--font-ui);
   font-size: 15px;
-  fill: #a7a29a;
+  fill: #746e65;
   text-anchor: middle;
 }
 
@@ -436,9 +487,12 @@ button {
   background: #2b2f37;
 }
 
+/* The nudge state carries white label text, so it needs the ink red, not the
+   dot red: axe caught #fffdfa on #d6402c at 4.47 against a 4.5 floor. The
+   button is 16.8px/600, just under the 18.66px that would let it off at 3:1. */
 .run[data-nudge="true"] {
-  background: var(--infected);
-  border-color: var(--infected);
+  background: var(--infected-ink);
+  border-color: var(--infected-ink);
 }
 
 .reset {
@@ -517,7 +571,7 @@ button {
 
 .baseline-label {
   font-size: 0.65rem;
-  color: var(--baseline);
+  color: var(--baseline-ink);
   white-space: nowrap;
 }
 
@@ -693,11 +747,19 @@ button {
 }
 
 .key-base {
-  color: var(--baseline);
+  color: var(--baseline-ink);
+}
+
+.key-base::before {
+  background: var(--baseline);
 }
 
 .key-mod {
-  color: var(--infected);
+  color: var(--infected-ink);
+}
+
+.key-mod::before {
+  background: var(--infected);
 }
 
 .overlay-scale {
@@ -750,11 +812,11 @@ button {
 }
 
 .delta[data-dir="down"] {
-  color: var(--recovered);
+  color: var(--recovered-ink);
 }
 
 .delta[data-dir="up"] {
-  color: var(--infected);
+  color: var(--infected-ink);
 }
 
 .compare-note {
