@@ -219,6 +219,16 @@
           <h2 id="change-title" class="act-title" data-testid="act-title">
             Then change just one thing
           </h2>
+          <!-- The standing instruction. It lives here rather than in the
+               `role="status"` prompt below, which is rewritten on every state
+               change and would re-announce this to a screen reader each time.
+               It says a line exists and never says where: rule 2. -->
+          <p class="act-lede" data-testid="change-instruction">
+            The slider changes one thing and nothing else — how many people each person meets in a
+            day. Move it, run the town again, and compare the two curves. Then keep cutting:
+            somewhere below there is a setting where the outbreak stops happening at all, and that
+            setting is the whole point.
+          </p>
         </div>
 
         <p class="prompt" role="status" data-testid="prompt">
@@ -240,10 +250,10 @@
              contact rate decides how many draws happen per tick and the two runs
              take different paths through the same fixed stream.) -->
         <p class="compare-empty" data-testid="compare-empty">
-          Run the town once, then start cutting the slider and running it again. Both outbreaks get
-          drawn on the same axes here — same population, same first patient, same virus, same seed.
-          What you're hunting for is the setting where the outbreak stops happening at all. It is
-          further down than it feels like it should be.
+          Run the town once, change the slider, and run it again. Both outbreaks get drawn on the
+          same axes here — same population, same first patient, same virus, same seed. If you
+          haven't found the setting that stops it yet, it is further down than it feels like it
+          should be.
         </p>
 
         <div class="compare-body" data-testid="compare-body" hidden>

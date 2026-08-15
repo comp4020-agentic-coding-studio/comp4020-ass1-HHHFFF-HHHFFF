@@ -142,6 +142,30 @@ describe("the story: predict, watch, change one thing, compare", () => {
     );
   });
 
+  it("states the task in act 02 without giving away where the line is", () => {
+    // Rule 2 cuts both ways here. The visitor is entitled to know what the one
+    // control does and that there is something to find — without that, "move
+    // the slider" is aimless. But naming the tipping point in the instruction
+    // hands over the answer before they have run into it, and the whole
+    // sequence is built so the threshold is discovered.
+    const change = doc.querySelector("#change")!.textContent!.replace(/\s+/g, " ").toLowerCase();
+
+    expect(change, "act 02 must name the one input the slider moves").toContain(
+      "how many people each person meets in a day",
+    );
+    expect(change, "and must say there is a setting worth finding").toContain("stops happening");
+
+    for (const giveaway of ["five", "six"]) {
+      expect(
+        change,
+        `act 02 names the tipping point ("${giveaway}") instead of letting it be found`,
+      ).not.toContain(giveaway);
+    }
+    expect(change, "no digits either — the line is discovered, not printed").not.toMatch(
+      new RegExp(`\\b${tippingPoint()}\\b`),
+    );
+  });
+
   it("puts the prediction ahead of the simulation in the document", () => {
     const predict = doc.querySelector("#predict")!;
     const watch = doc.querySelector("#watch")!;
