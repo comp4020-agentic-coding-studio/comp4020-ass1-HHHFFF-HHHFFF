@@ -426,6 +426,35 @@ describe("the prose and the model agree", () => {
     expect(text).toContain("five contacts a day and six");
   });
 
+  it("doesn't promise a run of chance it can't hold fixed", () => {
+    // `meet()` takes a number of draws that depends on the contact rate, so two
+    // rates walk the same seeded stream at different speeds and meet their luck
+    // in different places. A single rate is perfectly reproducible (asserted
+    // above), but the realisation is *not* pinned across rates — which is why
+    // five of the 120 pairs come out the wrong way round.
+    //
+    // The page used to say "the only difference you can see is the one you
+    // made" and "same run of luck". A reader ran ten contacts against eleven,
+    // watched both the peak and the total fall, and reasonably concluded the
+    // page was contradicting itself. It was: those two sentences claimed
+    // something the model cannot deliver.
+    // "only thing that differs" is on this list because rewriting the first
+    // two produced it: the sentence changed, the false claim survived, and it
+    // passed a version of this test that only knew the old wording. The line
+    // to hold is that only one *input* differs — what the two runs then do
+    // differently, including where their luck lands, follows from that.
+    for (const overclaim of [
+      "same run of luck",
+      "only difference you can see",
+      "only thing that differs",
+    ]) {
+      expect(
+        text,
+        `the page promises "${overclaim}", which the simulation cannot hold across rates`,
+      ).not.toContain(overclaim);
+    }
+  });
+
   it("promises an eight-day illness and runs one", () => {
     expect(BASE_CONFIG.infectiousDays).toBe(8);
     expect(text).toContain("eight-day illness");

@@ -232,10 +232,14 @@
         <p class="step">03 · Compare</p>
         <h2 id="compare-title" class="act-title">Same town, one number moved</h2>
 
+        <!-- This used to promise "the only difference you can see is the one
+             you made". It isn't true and can't be: the contact rate decides how
+             many random draws happen each tick, so the two runs take different
+             paths through the same fixed stream. Claim what actually holds. -->
         <p class="compare-empty" data-testid="compare-empty">
           Run the town once, change the slider, and run it again. Both outbreaks get drawn on the
-          same axes here — same population, same first patient, same seed, so the only difference
-          you can see is the one you made.
+          same axes here — same population, same first patient, same virus, same seed. Only one
+          input ever moves, and everything you see follows from it.
         </p>
 
         <div class="compare-body" data-testid="compare-body" hidden>

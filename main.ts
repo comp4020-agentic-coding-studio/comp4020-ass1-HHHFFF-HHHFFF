@@ -534,13 +534,19 @@ function promptFor(c: number): string {
   // A comparison has already landed and the slider hasn't moved since: send
   // them to the result, not back to a button they have just pressed.
   if (lastFinished && lastFinished !== baseline && c === lastFinished.contactsPerDay) {
-    return "Both runs are drawn on the same axes below — same people, same first patient, same run of luck. Move the slider again to try another version.";
+    return "Both runs are drawn on the same axes below — same people, same first patient, one input apart. Move the slider again to try another version.";
   }
   if (c !== baseline.contactsPerDay) {
     const step = Math.abs(c - baseline.contactsPerDay);
     return `Same town, same virus, same first patient — ${step} ${step === 1 ? "contact" : "contacts"} a day ${c < baseline.contactsPerDay ? "fewer" : "more"}. Run it and see what that alone is worth.`;
   }
-  return "Move the slider. Everything else stays exactly as it was — same people, same first patient, same run of luck — so whatever changes is down to the one number you touched.";
+  // Careful here. Contacts per day decides how many draws `meet()` takes each
+  // tick, so two rates walk the same seeded stream at different speeds and
+  // meet their luck in different places. The town, the virus and the first
+  // patient really are pinned; the exact run of chance is not, and promising
+  // otherwise is what makes an unlucky pair read as the page contradicting
+  // itself.
+  return "Move the slider. The town, the virus and the first patient are all pinned — the contact rate is the one input you can change, and everything the two runs do differently follows from it.";
 }
 
 /* Prediction ---------------------------------------------------------------- */
@@ -631,7 +637,7 @@ function setDelta(cell: HTMLElement, delta: number, neutral = false): void {
 function noteFor(base: RunSummary, mod: RunSummary): string {
   const step = mod.contactsPerDay - base.contactsPerDay;
   if (step === 0) {
-    return "Identical settings, identical outbreak — the seed is fixed, so none of this is luck. Move the slider and run it again.";
+    return "Identical settings, identical outbreak — a given rate always runs exactly the same way, so re-running this number can't tell you anything new. Move the slider and run it again.";
   }
   const size = Math.abs(step);
   const contacts = `${size} ${size === 1 ? "contact" : "contacts"} a day`;
