@@ -421,6 +421,9 @@ describe("the prose and the model agree", () => {
     // If the model is retuned and the copy isn't, this is what catches it.
     expect(tippingPoint()).toBe(5);
     expect(text).toContain("between five and six contacts a day");
+    // The closing beat names the same pair again, in prose. Rule 4 applies to
+    // it just as much: a retune has to move both sentences or fail here.
+    expect(text).toContain("five contacts a day and six");
   });
 
   it("promises an eight-day illness and runs one", () => {

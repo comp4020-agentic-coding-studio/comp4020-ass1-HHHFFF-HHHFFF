@@ -979,6 +979,24 @@ button {
   text-wrap: balance;
 }
 
+/* Two beats after the callout, stepped down so the callout stays the
+   crescendo: what the visitor could not have felt, then why that is the point.
+   The last one returns to full ink because it is the sentence to leave with. */
+.closing .why-coda {
+  max-width: 42ch;
+  margin: 1rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 1.9vw, 1.25rem);
+  line-height: 1.5;
+  color: var(--ink-soft);
+  text-wrap: pretty;
+}
+
+.closing .why-coda-last {
+  margin-top: 0.75rem;
+  color: var(--ink);
+}
+
 .fine-print {
   font-size: 0.85rem !important;
   color: var(--ink-soft);
@@ -1025,10 +1043,18 @@ button {
     max-width: none;
   }
 
-  /* The callout is the section's conclusion, so it runs under both columns. */
-  .closing .why-callout {
+  /* The closing beats are the section's conclusion, so they run under both
+     columns as one block. */
+  .why-close {
     grid-column: 1 / -1;
+  }
+
+  .closing .why-callout {
     max-width: 34ch;
+  }
+
+  .closing .why-coda {
+    max-width: 52ch;
   }
 
   .choices {
