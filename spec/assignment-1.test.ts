@@ -45,6 +45,20 @@ function builtCss(): string {
     .join("\n");
 }
 
+/**
+ * The other half of the copy. Most of what the visitor reads — every prompt,
+ * every comparison note — is a string in `main.ts` that never appears in
+ * index.html, so a test that only reads the markup is blind to it. The bundle
+ * is minified, so comments are gone and what's left is what ships.
+ */
+function builtJs(): string {
+  const assets = join(DIST, "assets");
+  return readdirSync(assets)
+    .filter((f) => f.endsWith(".js"))
+    .map((f) => readFileSync(join(assets, f), "utf8"))
+    .join("\n");
+}
+
 describe("core interaction: the controls exist and are usable", () => {
   it("tags the core interactive control, and it is a real button", () => {
     const control = doc.querySelector('[data-testid="interactive-control"]');
@@ -439,17 +453,23 @@ describe("the prose and the model agree", () => {
     // page was contradicting itself. It was: those two sentences claimed
     // something the model cannot deliver.
     // "only thing that differs" is on this list because rewriting the first
-    // two produced it: the sentence changed, the false claim survived, and it
-    // passed a version of this test that only knew the old wording. The line
-    // to hold is that only one *input* differs — what the two runs then do
-    // differently, including where their luck lands, follows from that.
+    // two produced it: the sentence changed, the false claim survived. The
+    // line to hold is that only one *input* differs — what the two runs then
+    // do differently, including where their luck lands, follows from that.
+    //
+    // It also has to scan the bundle, not just the markup. The sentence that
+    // reintroduced the claim was a prompt in main.ts, which never appears in
+    // index.html, so the first version of this test could not have caught it —
+    // and didn't. Reading the rendered page did. A sensor pointed at half the
+    // copy is the blind-sensor trap again, one file over.
+    const shipped = `${text} ${builtJs().toLowerCase()}`;
     for (const overclaim of [
       "same run of luck",
       "only difference you can see",
       "only thing that differs",
     ]) {
       expect(
-        text,
+        shipped,
         `the page promises "${overclaim}", which the simulation cannot hold across rates`,
       ).not.toContain(overclaim);
     }
