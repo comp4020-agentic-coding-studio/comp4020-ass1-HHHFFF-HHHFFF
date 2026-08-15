@@ -10,6 +10,7 @@ import {
   simulate,
   spreadTendency,
   tippingPoint,
+  wrongWayRound,
 } from "../sim";
 
 // Assignment 1 asks for a core interaction stated plainly enough to write a
@@ -221,6 +222,51 @@ describe("core interaction: using it changes the outcome", () => {
       six.everInfected,
       "one extra contact a day should be the difference the explainer promises",
     ).toBeGreaterThan(five.everInfected * 3);
+  });
+
+  it("separates the two sides of the line completely", () => {
+    // This is the property the page is entitled to claim, and it is not the one
+    // CLAUDE.md used to record. That rule said seed 20260817 gives "a monotone
+    // response"; a full sweep of the slider showed it doesn't — five of the 120
+    // ordered pairs run the other way. What does hold, with a 5x margin, is
+    // separation: every rate at or below the line stays smaller than every rate
+    // above it. That is the threshold the explainer is about.
+    const line = tippingPoint();
+    const below: number[] = [];
+    const above: number[] = [];
+    for (let c = MIN_CONTACTS; c <= MAX_CONTACTS; c += 1) {
+      (c <= line ? below : above).push(simulate(c).everInfected);
+    }
+    expect(
+      Math.max(...below),
+      "a rate at or below the line reached as far as one above it",
+    ).toBeLessThan(Math.min(...above));
+  });
+
+  it("keeps the pairs that run against the argument rare, and detectable", () => {
+    // The page narrates every comparison. Eight contacts a day infects 115 here
+    // and nine infects 85, so without a guard it explains a run that had *more*
+    // contacts and fewer infections as "fewer chances" — arguing against
+    // itself. `wrongWayRound` is what `showCompare` checks before it colours a
+    // delta green or reaches for one of its explanations.
+    const runs = new Map<number, ReturnType<typeof simulate>>();
+    for (let c = MIN_CONTACTS; c <= MAX_CONTACTS; c += 1) runs.set(c, simulate(c));
+
+    let pairs = 0;
+    let wrong = 0;
+    for (let lo = MIN_CONTACTS; lo <= MAX_CONTACTS; lo += 1) {
+      for (let hi = lo + 1; hi <= MAX_CONTACTS; hi += 1) {
+        pairs += 1;
+        if (wrongWayRound(runs.get(lo)!, runs.get(hi)!)) wrong += 1;
+      }
+    }
+
+    expect(wrongWayRound(simulate(5), simulate(6)), "the cliff pair is the argument").toBe(false);
+    expect(wrong, "if the sweep were clean the guard would be dead code").toBeGreaterThan(0);
+    expect(
+      wrong / pairs,
+      "these are the exception; past a tenth the slider stops carrying the point",
+    ).toBeLessThan(0.1);
   });
 
   it("moving the slider one notch changes what the visitor sees", () => {
