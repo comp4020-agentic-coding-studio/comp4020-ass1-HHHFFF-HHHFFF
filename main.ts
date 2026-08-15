@@ -74,6 +74,7 @@ const ui = {
   summaryDays: need<HTMLElement>('[data-testid="summary-days"]'),
 
   prompt: need<HTMLElement>('[data-testid="prompt"]'),
+  announcer: need<HTMLElement>('[data-testid="announcer"]'),
 
   compareEmpty: need<HTMLElement>('[data-testid="compare-empty"]'),
   compareBody: need<HTMLElement>('[data-testid="compare-body"]'),
@@ -211,6 +212,22 @@ function finish(): void {
   }
   render();
   updateChrome();
+  // After showCompare, so the note it reads is the one on screen.
+  announce(speakOutcome(summary, isFirst));
+}
+
+/**
+ * The whole payoff of the page — how many caught it, and what the comparison
+ * made of that — arrives by unhiding a panel, which says nothing to a screen
+ * reader. This is the one place it gets spoken.
+ */
+function speakOutcome(summary: RunSummary, isFirst: boolean): string {
+  const head = `Run finished at ${summary.contactsPerDay} contacts a day. ${summary.everInfected} of ${summary.population} caught it, ${summary.peakInfected} on the worst day, over ${summary.lastDay} days.`;
+  return isFirst ? head : `${head} ${ui.compareNote.textContent}`;
+}
+
+function announce(message: string): void {
+  ui.announcer.textContent = message;
 }
 
 function startOver(): void {
@@ -422,6 +439,17 @@ const TENDENCY_LABEL: Record<Tendency, string> = {
 function updateChrome(): void {
   const c = readContacts();
   ui.contactsValue.textContent = `${c} contacts a day, each person`;
+  // A range input announces a bare "10" without this — no unit, and none of
+  // what the number means. The tendency rides along once there is a baseline,
+  // so arrowing across the line is audible, but not while a run is in flight,
+  // when it would describe a rate that outbreak isn't using.
+  const spoken = `${c} ${c === 1 ? "contact" : "contacts"} a day`;
+  ui.contacts.setAttribute(
+    "aria-valuetext",
+    baseline && !inFlight()
+      ? `${spoken}, ${TENDENCY_LABEL[spreadTendency(c)].toLowerCase()}`
+      : spoken,
+  );
 
   if (phase === "running") ui.run.textContent = "Pause";
   else if (phase === "paused") ui.run.textContent = "Resume";

@@ -13,6 +13,13 @@
   <body>
     <a class="skip-link" href="#predict">Skip to the explainer</a>
 
+    <!-- The run summary and the comparison are revealed by removing `hidden`,
+         and an element that was hidden at the moment its content changed is not
+         reliably announced. This region is always in the DOM and always in the
+         accessibility tree, so the outcome of a run gets spoken instead of
+         appearing in silence. -->
+    <p class="visually-hidden" role="status" data-testid="announcer"></p>
+
     <header class="masthead">
       <p class="wordmark">An interactive explainer</p>
       <nav aria-label="Sections">
@@ -37,6 +44,19 @@
         </p>
       </section>
 
+      <!-- The controls below are styled and look live before the module has
+           loaded, and they are inert without it. Say so rather than let a
+           blocked or slow script read as a broken page. -->
+      <noscript>
+        <div class="noscript-band">
+          <p class="noscript-note">
+            This explainer <em>is</em> the simulation, so it needs JavaScript: without it the town
+            never runs and the controls below do nothing. Nothing is sent anywhere either way — the
+            whole thing runs in your browser.
+          </p>
+        </div>
+      </noscript>
+
       <!-- 00 — commit to an answer before seeing one. -->
       <section id="predict" class="act act-split" aria-labelledby="predict-title">
         <div class="act-copy">
@@ -52,13 +72,13 @@
         </div>
 
         <div class="choices" role="group" aria-label="Your prediction">
-          <button type="button" class="choice" data-predict="fizzle" data-testid="predict-fizzle">
+          <button type="button" class="choice" data-predict="fizzle" aria-pressed="false" data-testid="predict-fizzle">
             It dies out quickly
           </button>
-          <button type="button" class="choice" data-predict="slow" data-testid="predict-slow">
+          <button type="button" class="choice" data-predict="slow" aria-pressed="false" data-testid="predict-slow">
             It spreads slowly
           </button>
-          <button type="button" class="choice" data-predict="big" data-testid="predict-big">
+          <button type="button" class="choice" data-predict="big" aria-pressed="false" data-testid="predict-big">
             It becomes a large outbreak
           </button>
         </div>
