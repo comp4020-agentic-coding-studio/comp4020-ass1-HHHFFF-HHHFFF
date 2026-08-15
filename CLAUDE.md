@@ -165,10 +165,28 @@ caught it because no test pinned those numbers yet. One does now.
 **5. Tune by sweep, not by eye.** Triggered by choosing or changing infection,
 contact or recovery behaviour. `sim.ts` is DOM-free precisely so it can run
 headlessly thousands of times: sweep seeds against contact rates and read the
-table. Seed `20260817` was picked from eight candidates because it gives a
-monotone response with a sharp cliff at five contacts a day. Don't choose
-parameters because the animation looks about right, and don't reach for a more
-dramatic outbreak — the number worth having is one a test can hold.
+table. Seed `20260817` was picked from eight candidates for its sharp cliff at
+five contacts a day. Don't choose parameters because the animation looks about
+right, and don't reach for a more dramatic outbreak — the number worth having
+is one a test can hold.
+
+This rule used to add "and a monotone response", and that was false. Sweeping
+the whole slider rather than the cliff shows five of the 120 ordered pairs
+running the other way — eight contacts a day infects 115, nine infects 85. The
+seed is fixed, but **changing the rate changes where the luck falls**, so a
+single seeded run is arithmetic and luck together and no two adjacent notches
+are guaranteed to order correctly. Nor is a better seed available for free: of
+300 scanned, two were monotone across all sixteen rates and both had a duller
+cliff (the best, `20260860`, gives 8 → 20 where this one gives 10 → 51).
+Sharpness and monotonicity are in tension; the piece needs sharpness.
+
+So don't claim smoothness along the slider. The property the page is entitled
+to — and the one `spec/assignment-1.test.ts` now holds — is **separation**:
+every rate at or below the line stays smaller than every rate above it, with a
+5× margin. Everything the copy says is about the threshold, so that is the
+invariant that matches the argument. Wherever the page narrates a comparison it
+must check `wrongWayRound` first, or it will eventually explain its own
+counter-example as evidence, which is exactly what it did.
 
 **6. The reading sequence is a contract.** Triggered by adding, reordering or
 renaming narrative sections. A green suite says nothing about the order a reader
