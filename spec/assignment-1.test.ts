@@ -257,30 +257,53 @@ describe("core interaction: using it changes the outcome", () => {
     ).toBeLessThan(Math.min(...above));
   });
 
-  it("keeps the pairs that run against the argument rare, and detectable", () => {
-    // The page narrates every comparison. Eight contacts a day infects 115 here
-    // and nine infects 85, so without a guard it explains a run that had *more*
-    // contacts and fewer infections as "fewer chances" — arguing against
-    // itself. `wrongWayRound` is what `showCompare` checks before it colours a
-    // delta green or reaches for one of its explanations.
+  it("never lets a reversal cross the line", () => {
+    // The previous version of this test counted reversals over all 120 ordered
+    // pairs and asserted the rate stayed under a tenth. It passed at 4% — and
+    // that was the wrong denominator. Nobody compares contact rates at random;
+    // they nudge the slider one notch. Among *adjacent* steps the rate is 3 in
+    // 15, and in the busy half above eight contacts it is 3 in 8. A reader hit
+    // two of them in a row and reasonably concluded the page was contradicting
+    // itself.
+    //
+    // The rate was never the property worth holding. This is: a reversal only
+    // ever happens between two settings that are both above the line, where
+    // the outbreak was going to happen either way. Cross the line and the
+    // ordering is absolute. That is what `noteFor` tells the visitor, and what
+    // lets the piece claim a threshold rather than a trend.
+    const line = tippingPoint();
     const runs = new Map<number, ReturnType<typeof simulate>>();
     for (let c = MIN_CONTACTS; c <= MAX_CONTACTS; c += 1) runs.set(c, simulate(c));
 
-    let pairs = 0;
-    let wrong = 0;
+    const reversals: string[] = [];
     for (let lo = MIN_CONTACTS; lo <= MAX_CONTACTS; lo += 1) {
       for (let hi = lo + 1; hi <= MAX_CONTACTS; hi += 1) {
-        pairs += 1;
-        if (wrongWayRound(runs.get(lo)!, runs.get(hi)!)) wrong += 1;
+        if (!wrongWayRound(runs.get(lo)!, runs.get(hi)!)) continue;
+        reversals.push(`${lo}->${hi}`);
+        expect(
+          lo,
+          `${lo}->${hi} runs backwards across the line; the page says that never happens`,
+        ).toBeGreaterThan(line);
       }
     }
 
-    expect(wrongWayRound(simulate(5), simulate(6)), "the cliff pair is the argument").toBe(false);
-    expect(wrong, "if the sweep were clean the guard would be dead code").toBeGreaterThan(0);
-    expect(
-      wrong / pairs,
-      "these are the exception; past a tenth the slider stops carrying the point",
-    ).toBeLessThan(0.1);
+    expect(wrongWayRound(simulate(line), simulate(line + 1)), "the line's own step").toBe(false);
+    expect(reversals.length, "if the sweep were clean the guard would be dead code")
+      .toBeGreaterThan(0);
+  });
+
+  it("makes the line the only step that turns an outbreak on", () => {
+    // What "a small change flips the outcome" has to mean, if a single step
+    // above the line can go either way: exactly one notch on this slider takes
+    // the town from an outbreak that doesn't really happen to one that does.
+    const line = tippingPoint();
+    const share = (c: number) => simulate(c).everInfected / population;
+
+    const switches: number[] = [];
+    for (let c = MIN_CONTACTS; c < MAX_CONTACTS; c += 1) {
+      if (share(c) <= 0.1 && share(c + 1) >= 0.25) switches.push(c);
+    }
+    expect(switches, "one step, and it is the tipping point the copy names").toEqual([line]);
   });
 
   it("moving the slider one notch changes what the visitor sees", () => {

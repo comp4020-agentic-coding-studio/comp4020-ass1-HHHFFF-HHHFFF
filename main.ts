@@ -643,11 +643,14 @@ function noteFor(base: RunSummary, mod: RunSummary): string {
   const contacts = `${size} ${size === 1 ? "contact" : "contacts"} a day`;
   const spared = base.everInfected - mod.everInfected;
 
-  // Say it plainly when this particular pair runs against the argument, rather
-  // than reaching for one of the explanations below — all of which assume the
-  // outbreak moved the way the contact rate did.
+  // A pair that runs against the argument is not an embarrassment to explain
+  // away — it is the argument's other half. Every reversal sits with both
+  // settings above the line, where the outbreak was going to happen either way,
+  // and `spec/assignment-1.test.ts` holds that: no reversal ever crosses it.
+  // So say what it means rather than reaching for one of the explanations
+  // below, all of which assume the outbreak moved the way the rate did.
   if (wrongWayRound(base, mod)) {
-    return `${contacts} ${step > 0 ? "more" : "fewer"}, and this time the outbreak came out ${step > 0 ? "smaller" : "larger"}. The seed is fixed, but changing the rate changes where the luck falls, so two neighbouring settings can land the wrong way round. It's the span of the slider that carries the argument, not one step of it — move further from the baseline and it shows.`;
+    return `${contacts} ${step > 0 ? "more" : "fewer"}, and the outbreak came out ${step > 0 ? "smaller" : "larger"}. Up here it barely matters: at both settings this town was always going to have an outbreak, and one contact either way only jostles how it lands. The place where a single contact decides anything is further down, at the line.`;
   }
 
   if (mod.everInfected <= base.everInfected * 0.3) {
