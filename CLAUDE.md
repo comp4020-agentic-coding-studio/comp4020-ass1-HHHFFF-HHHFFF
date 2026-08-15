@@ -270,6 +270,15 @@ silence while every markup assertion passed. The fix is the always-present
 screen. Reveal a new panel and it needs to reach that region; don't scatter
 `aria-live` onto the panels themselves.
 
+It also has to be *cleared*, and the invariant is that it holds text exactly
+when the run summary is on screen — `startRun` and `startOver` clear it beside
+the `setHidden(ui.runSummary, true)` they already do. A stale live region is
+invisible to every check here: it never speaks, because a status region only
+speaks on change, so it just sits there describing a run that no longer exists
+for anyone who navigates to it. Found by walking the page after a reset, not by
+a test, and only checkable in a real browser — JSDOM can assert the region
+ships empty, and does, but the module never runs there.
+
 A range input announces a bare `10` --- no unit, no meaning. `aria-valuetext`
 carries the unit and, once there's a baseline, the tendency, so arrowing across
 the line is audible. It drops the tendency while a run is in flight, for the

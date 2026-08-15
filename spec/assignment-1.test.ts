@@ -102,6 +102,25 @@ describe("core interaction: the controls exist and are usable", () => {
     }
   });
 
+  it("ships the announcer empty, and not as a hidden element", () => {
+    // The outcome of a run is revealed by unhiding a panel, which a screen
+    // reader is not reliably told about, so it is spoken through this region
+    // instead. Two things have to hold in the markup for that to work.
+    const announcer = doc.querySelector('[data-testid="announcer"]');
+    expect(announcer, "no announcer region").toBeTruthy();
+    expect(announcer!.getAttribute("role"), "it has to be a live region").toBe("status");
+
+    // `hidden` would take it out of the accessibility tree entirely, so it must
+    // be off-screen by class instead. `.visually-hidden` has no `display`, so
+    // unlike the panels it needs no `[hidden]` override — and must not get one.
+    expect(announcer!.hasAttribute("hidden"), "a hidden live region announces nothing").toBe(false);
+    expect(announcer!.classList.contains("visually-hidden")).toBe(true);
+
+    // Anything in here at load would be read out before the visitor has done
+    // anything. It is filled when a run finishes and cleared when one starts.
+    expect(announcer!.textContent?.trim(), "the announcer ships empty").toBe("");
+  });
+
   it("starts the comparison empty and the tendency gauge hidden", () => {
     expect(doc.querySelector('[data-testid="compare-body"]')!.hasAttribute("hidden")).toBe(true);
     expect(doc.querySelector('[data-testid="compare-empty"]')!.hasAttribute("hidden")).toBe(false);

@@ -167,6 +167,7 @@ function startRun(): void {
   carryMs = 0;
   setHidden(ui.runSummary, true);
   setHidden(ui.thresholdNotice, true);
+  announce("");
 
   if (typeof requestAnimationFrame !== "function") {
     // No animation host (a test runner, say): the outbreak still has an
@@ -226,6 +227,15 @@ function speakOutcome(summary: RunSummary, isFirst: boolean): string {
   return isFirst ? head : `${head} ${ui.compareNote.textContent}`;
 }
 
+/**
+ * Holds text exactly when the run summary is on screen, and is cleared
+ * alongside it by `startRun` and `startOver`. Left uncleared, "Start over"
+ * leaves a region describing a run that no longer exists — silent to anyone
+ * watching, because a status region only speaks when it changes, and wrong to
+ * anyone who navigates to it. Clearing is enough: the prompt is a status region
+ * too and already announces the state the reset put the page into, so a message
+ * here as well would just say it twice.
+ */
 function announce(message: string): void {
   ui.announcer.textContent = message;
 }
@@ -243,6 +253,7 @@ function startOver(): void {
   setHidden(ui.compareBody, true);
   setHidden(ui.compareEmpty, false);
   setHidden(ui.ghostCurve, true);
+  announce("");
   render();
   updateChrome();
 }
