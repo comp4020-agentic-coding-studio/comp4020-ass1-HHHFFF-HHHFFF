@@ -7,8 +7,8 @@ one mechanic: contacts per day. A town of 180 dots, one index case, a seeded
 simulation, one slider. The visitor predicts, watches a baseline run, changes
 one number, compares both curves. The threshold sits at five contacts a day —
 one contact either side is the difference between 10 infected and 51. Vaccines,
-masks, more parameters — all absent, since each would blur the one comparison
-the piece exists to make.
+masks, more parameters are absent: each would blur the one comparison the piece
+exists to make.
 
 ## The moments that mattered
 
@@ -30,11 +30,11 @@ simulation without the build going red.
 
 Screenshots showed the outbreak frozen on day 0. Headless Chrome renders
 roughly a frame per second without a compositor, so twenty seconds of virtual
-time advanced the sim one day — every interactive state was invisible. Rather
+time advanced the sim one day — every interactive state invisible. Rather
 than accept screenshots of a dead page, I added a test seam that steps the
 simulation without frames, and corrected `CLAUDE.md`'s `file://`
-recipe, which had been screenshotting a page running no JavaScript at all:
-Chrome blocks module scripts from that origin. The seam rendered day 0,
+recipe, which had been screenshotting a page running no JavaScript: Chrome
+blocks module scripts from that origin. The seam rendered day 0,
 mid-outbreak and completed states, matching the headless sweep exactly — 141
 infected, peak 40, 51 days.
 [`e2e4125`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HHHFFF-HHHFFF/commit/e2e4125)
@@ -42,32 +42,32 @@ infected, peak 40, 51 days.
 ### 3. A bug 36 green tests could not see
 
 Rebuilding the page as a narrative, every test passed — and a screenshot showed
-steps reading 01, 03, 04, a hole where 02 should be, because "change one thing"
-shared the watch section's marker. The obvious fix was patching the markup.
+steps reading 01, 03, 04, a hole where 02 belonged, because "change one thing"
+shared the watch marker. The obvious fix was patching the markup.
 Instead I asked what class of error got through: the tests knew each section's
 content, nothing about the sequence a reader meets. The fix ships with an
 invariant asserting step numbers run 1..n with no gap. The same pass caught a
-prompt still saying "Run it" after the run had happened.
+prompt still saying "Run it" after the run.
 [`e2e4125...75dc1b6`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HHHFFF-HHHFFF/compare/e2e4125...75dc1b6)
 
-### 4. Fixing the symptom, twice, before the cause
+### 4. The rule I had never checked
 
-At 1920 the text ran at six widths, so I capped it to three named tokens. That
-fixed the ragged edge but was the wrong diagnosis: prose ended at 936px
-inside a 1512px shell, leaving 45% of every section empty. The real cause was
-that nothing sat beside the text, so each section's figure moved up next to it,
-DOM order kept copy-then-figure so phone and screen-reader order hold. Verified
-by re-measuring the 390px frame (`clientWidth=390 scrollWidth=390`, no sub-24px
-targets) rather than trusting the diagnosis again. Nothing pinned the split, so
-a later edit could drop it silently; a spec assertion now locks the `>=56rem`
-rule and the copy-before-companion order.
-[`84276f6...ad1caf4`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HHHFFF-HHHFFF/compare/84276f6...ad1caf4)
+`CLAUDE.md` recorded seed `20260817` as giving "a monotone response with a
+sharp cliff". I had measured the cliff and inferred the rest. Sweeping the
+whole slider disproved it: five of the 120 ordered pairs run the other way, and
+at eight contacts against nine the page explained *more* contacts and fewer
+infections as "fewer chances", deltas green — narrating its own
+counter-example as evidence. The obvious fix was a better seed, so I measured
+instead of assuming: of 300 scanned, two are monotone and both blunt the cliff
+(8 → 20 against this one's 10 → 51). The seed stayed, the false rule went, and
+the page now checks `wrongWayRound` before colouring a delta. The spec now
+holds what is true: separation across the line.
+[`487a437...e7ef905`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HHHFFF-HHHFFF/compare/487a437...e7ef905)
 
 ## Where to look
 
 The harness is what these moments produced:
 [`4d33689`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HHHFFF-HHHFFF/commit/4d33689)
-turns each failure above into an executable rule in `CLAUDE.md`, named by its
-trigger. Every later commit was written against that file — including
-[`e7ef905`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HHHFFF-HHHFFF/commit/e7ef905),
-which deletes a rule I had never checked.
+turns each failure above into a rule in `CLAUDE.md`, named by its trigger.
+Every later commit was written against it; moment 4 is that file correcting
+itself.
